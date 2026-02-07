@@ -4,6 +4,7 @@ import StationDiagram from './StationDiagram';
 import { Package, ChevronDown, ChevronUp, HelpCircle, PlaneTakeoff, PlaneLanding, Trash2, Settings, Users } from 'lucide-react';
 import { getAllPresets, getPresetAircraft } from '../data/presets';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const Tooltip = ({ text, children }: { text: string; children: React.ReactNode }) => (
   <div className="group relative inline-block">
@@ -18,6 +19,7 @@ const Tooltip = ({ text, children }: { text: string; children: React.ReactNode }
 export default function WBCalculator() {
   const { flight, setFlight, aircraft, setAircraft, results } = useWeightAndBalance();
   const [showDetails, setShowDetails] = useState(true);
+  const { t } = useTranslation();
 
   const isKg = flight.unitPreference === 'KG';
   // Helpers
@@ -114,41 +116,41 @@ export default function WBCalculator() {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8 flex flex-wrap items-center justify-between gap-6 border-l-8 border-aviation-blue transition-colors">
         <div>
           <h2 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-2">
-            Flight Status <span className={`h-2 w-2 rounded-full ${results.isWithinLimits ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
+            {t('wb.flightStatus')} <span className={`h-2 w-2 rounded-full ${results.isWithinLimits ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
           </h2>
           <p className="text-xl font-black text-aviation-black dark:text-white flex items-center gap-2">
             {aircraft.tailNumber} - {results.isWithinLimits ? (
-              <span className="text-green-600">READY FOR TAKEOFF</span>
+              <span className="text-green-600">{t('wb.readyForTakeoff')}</span>
             ) : (
               <Tooltip text={[
                 results.status !== 'OK' ? results.status.replace('_', ' ') : null,
-                results.stationWarnings?.frontSeats ? 'Front Row Limit Exceeded' : null,
-                results.stationWarnings?.rearSeats ? 'Rear Row Limit Exceeded' : null,
-                results.stationWarnings?.totalBaggage ? 'Baggage Compartment Limit Exceeded' : null,
-                results.stationWarnings?.baggage1 ? 'Baggage 1 Limit Exceeded' : null,
-                results.stationWarnings?.baggage2 ? 'Baggage 2 Limit Exceeded' : null,
-                results.stationWarnings?.fuelCapacity ? 'Fuel Capacity Exceeded' : null,
+                results.stationWarnings?.frontSeats ? t('wb.warningFrontRow') : null,
+                results.stationWarnings?.rearSeats ? t('wb.warningRearRow') : null,
+                results.stationWarnings?.totalBaggage ? t('wb.warningBaggage') : null,
+                results.stationWarnings?.baggage1 ? t('wb.warningBaggage') + ' (1)' : null,
+                results.stationWarnings?.baggage2 ? t('wb.warningBaggage') + ' (2)' : null,
+                results.stationWarnings?.fuelCapacity ? t('wb.warningFuelExceeds') : null,
               ].filter(Boolean).join(', ')}>
                 <span className="text-red-600 flex items-center gap-1 cursor-help">
-                  RESTRICTED <HelpCircle className="h-4 w-4" />
+                  {t('wb.restricted')} <HelpCircle className="h-4 w-4" />
                 </span>
               </Tooltip>
             )}
           </p>
         </div>
         <div className="flex gap-4">
-          <div className="text-right border-r border-gray-100 dark:border-gray-700 pr-4">
+          <div className="text-end border-e border-gray-100 dark:border-gray-700 pe-4">
             <div className={`text-2xl font-mono font-bold ${results.totalWeight > aircraft.maxTakeoffWeight ? 'text-red-600' : 'text-aviation-black dark:text-white'}`}>
-              {results.totalWeight.toFixed(0)} lbs
+              {results.totalWeight.toFixed(0)} {isKg ? 'kg' : 'lbs'}
             </div>
-            <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-tighter">Gross Weight</div>
-            <div className="text-[9px] text-gray-400 dark:text-gray-500 font-medium">Max: {aircraft.maxTakeoffWeight} lbs</div>
+            <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-tighter">{t('wb.grossWeight')}</div>
+            <div className="text-[9px] text-gray-400 dark:text-gray-500 font-medium">{t('wb.max')}: {aircraft.maxTakeoffWeight} lbs</div>
           </div>
-          <div className="text-right">
+          <div className="text-end">
             <div className={`text-2xl font-mono font-bold ${results.status === 'FWD_CG' || results.status === 'AFT_CG' ? 'text-red-600' : 'text-aviation-blue dark:text-blue-400'}`}>
               {results.cg.toFixed(2)} in
             </div>
-            <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-tighter">Center of Gravity</div>
+            <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-tighter">{t('wb.cg')}</div>
           </div>
         </div>
       </div>
@@ -161,13 +163,13 @@ export default function WBCalculator() {
           {/* Aircraft Selection */}
           <div className="pb-4 border-b border-gray-100">
             <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-              <Settings className="h-3 w-3" /> Aircraft Configuration
+              <Settings className="h-3 w-3" /> {t('wb.aircraftConfig')}
             </label>
             <div className="relative">
               <select
                 value={aircraft.id}
                 onChange={(e) => handleAircraftChange(e.target.value)}
-                className="block w-full rounded-md border-gray-200 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-700/50 py-2.5 pl-3 pr-10 text-sm font-semibold text-aviation-black dark:text-white focus:border-aviation-blue focus:ring-aviation-blue transition shadow-sm appearance-none"
+                className="block w-full rounded-md border-gray-200 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-700/50 py-2.5 ps-3 pe-10 text-sm font-semibold text-aviation-black dark:text-white focus:border-aviation-blue focus:ring-aviation-blue transition shadow-sm appearance-none"
               >
                 {getAllPresets().map(preset => (
                   <option key={preset.id} value={preset.id}>
@@ -175,23 +177,23 @@ export default function WBCalculator() {
                   </option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+              <div className="pointer-events-none absolute inset-y-0 right-0 rtl:left-0 rtl:right-auto flex items-center px-2 text-gray-400">
                 <ChevronDown className="h-4 w-4" />
               </div>
             </div>
             <div className="mt-2 flex justify-between text-[10px] text-gray-500 dark:text-gray-400">
-              <span>BEW: <span className="font-bold text-gray-700 dark:text-gray-300">{aircraft.basicEmptyWeight} lbs</span></span>
-              <span>MTW: <span className="font-bold text-gray-700 dark:text-gray-300">{aircraft.maxTakeoffWeight} lbs</span></span>
-              <span>Arm: <span className="font-bold text-gray-700 dark:text-gray-300">{aircraft.emptyWeightArm}"</span></span>
-              <span>Fuel: <span className="font-bold text-gray-700 dark:text-gray-300">{(aircraft.fuelCapacity * (isKg ? GAL_TO_LITER : 1)).toFixed(1)} {fuelUnit}</span></span>
+              <span>{t('wb.bew')}: <span className="font-bold text-gray-700 dark:text-gray-300">{aircraft.basicEmptyWeight} lbs</span></span>
+              <span>{t('wb.mtw')}: <span className="font-bold text-gray-700 dark:text-gray-300">{aircraft.maxTakeoffWeight} lbs</span></span>
+              <span>{t('wb.arm')}: <span className="font-bold text-gray-700 dark:text-gray-300">{aircraft.emptyWeightArm}"</span></span>
+              <span>{t('wb.fuel')}: <span className="font-bold text-gray-700 dark:text-gray-300">{(aircraft.fuelCapacity * (isKg ? GAL_TO_LITER : 1)).toFixed(1)} {fuelUnit}</span></span>
             </div>
           </div>
 
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold text-lg flex items-center gap-2 text-aviation-black dark:text-white">
               <Package className="h-5 w-5 text-aviation-blue dark:text-blue-400" />
-              Loading
-              <Tooltip text="Enter the weight for each station. Arm is the distance from the datum. Weight x Arm = Moment.">
+              {t('wb.loading')}
+              <Tooltip text={t('wb.loadingTooltip')}>
                 <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
               </Tooltip>
             </h3>
@@ -204,7 +206,7 @@ export default function WBCalculator() {
               title="Set 2 Front PAX (180lbs) and 40 Gal Fuel"
             >
               <Users className="h-3.5 w-3.5" />
-              Standard Flight
+              {t('wb.standardFlight')}
             </button>
             <button
               onClick={handleClearAll}
@@ -212,31 +214,31 @@ export default function WBCalculator() {
               title="Clear all inputs"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Clear All
+              {t('wb.clearAll')}
             </button>
             <button
               onClick={toggleUnit}
               className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-lg transition border border-gray-200 dark:border-gray-600 active:scale-95"
             >
-              Unit: {isKg ? 'KG' : 'LBS'}
+              {t('wb.unit')}: {isKg ? 'KG' : 'LBS'}
             </button>
           </div>
 
           {/* Form Fields */}
           {[
-            { id: 'pilotWeight', label: 'Pilot', max: aircraft.maxFrontSeatWeight, isCombined: true },
-            { id: 'frontPaxWeight', label: 'Front Pax', max: aircraft.maxFrontSeatWeight, isCombined: true },
-            { id: 'rearPax1Weight', label: 'Rear Pax 1', max: aircraft.maxRearSeatWeight, isCombined: true },
-            { id: 'rearPax2Weight', label: 'Rear Pax 2', max: aircraft.maxRearSeatWeight, isCombined: true },
+            { id: 'pilotWeight', label: t('wb.pilot'), max: aircraft.maxFrontSeatWeight, isCombined: true },
+            { id: 'frontPaxWeight', label: t('wb.frontPax'), max: aircraft.maxFrontSeatWeight, isCombined: true },
+            { id: 'rearPax1Weight', label: t('wb.rearPax1'), max: aircraft.maxRearSeatWeight, isCombined: true },
+            { id: 'rearPax2Weight', label: t('wb.rearPax2'), max: aircraft.maxRearSeatWeight, isCombined: true },
             {
               id: 'baggage1Weight',
-              label: 'Baggage 1',
+              label: t('wb.baggage1'),
               max: aircraft.maxBaggage1Weight,
               warning: results.stationWarnings?.baggage1
             },
             {
               id: 'baggage2Weight',
-              label: 'Baggage 2',
+              label: t('wb.baggage2'),
               max: aircraft.maxBaggage2Weight,
               warning: results.stationWarnings?.baggage2
             },
@@ -246,7 +248,7 @@ export default function WBCalculator() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{field.label}</label>
                 {(field as any).max && (
                   <span className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-tighter">
-                    {(field as any).isCombined ? 'Row Max: ' : 'Max: '}
+                    {(field as any).isCombined ? t('wb.rowMax') + ': ' : t('wb.max') + ': '}
                     {((isKg ? (field as any).max / KG_TO_LBS : (field as any).max)).toFixed(0)} {unitLabel}
                   </span>
                 )}
@@ -256,17 +258,17 @@ export default function WBCalculator() {
                   type="number"
                   value={(flight as any)[field.id] === undefined ? '' : (flight as any)[field.id]}
                   onChange={(e) => handleWeightChange(field.id as any, e.target.value)}
-                  className={`block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700/50 pl-3 pr-12 sm:text-sm py-2 text-aviation-black dark:text-white focus:ring-aviation-blue focus:border-aviation-blue transition-colors ${(field as any).warning ? 'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+                  className={`block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700/50 ps-3 pe-12 sm:text-sm py-2 text-aviation-black dark:text-white focus:ring-aviation-blue focus:border-aviation-blue transition-colors ${(field as any).warning ? 'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
                     }`}
                   placeholder="0"
                 />
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 right-0 rtl:left-0 rtl:right-auto pe-3 rtl:ps-3 rtl:pe-0 flex items-center pointer-events-none">
                   <span className="text-gray-500 dark:text-gray-400 sm:text-sm">{unitLabel}</span>
                 </div>
               </div>
               {(field as any).warning && (
                 <p className="text-[10px] text-red-500 font-bold mt-1 animate-pulse">
-                  ! Exceeds structural limit for this station
+                  {t('wb.warningExceeds')}
                 </p>
               )}
             </div>
@@ -276,17 +278,17 @@ export default function WBCalculator() {
           <div className="space-y-2">
             {results.stationWarnings?.frontSeats && (
               <div className="p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-[10px] text-red-700 dark:text-red-400 font-bold animate-pulse">
-                WARNING: Front Seat Row combined weight exceeds {((isKg ? aircraft.maxFrontSeatWeight / KG_TO_LBS : aircraft.maxFrontSeatWeight)).toFixed(0)} {unitLabel} limit
+                {t('wb.warningFrontRow')} ({((isKg ? aircraft.maxFrontSeatWeight / KG_TO_LBS : aircraft.maxFrontSeatWeight)).toFixed(0)} {unitLabel})
               </div>
             )}
             {results.stationWarnings?.rearSeats && (
               <div className="p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-[10px] text-red-700 dark:text-red-400 font-bold animate-pulse">
-                WARNING: Rear Seat Row combined weight exceeds {((isKg ? aircraft.maxRearSeatWeight / KG_TO_LBS : aircraft.maxRearSeatWeight)).toFixed(0)} {unitLabel} limit
+                {t('wb.warningRearRow')} ({((isKg ? aircraft.maxRearSeatWeight / KG_TO_LBS : aircraft.maxRearSeatWeight)).toFixed(0)} {unitLabel})
               </div>
             )}
             {results.stationWarnings?.totalBaggage && (
               <div className="p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-[10px] text-red-700 dark:text-red-400 font-bold animate-pulse">
-                WARNING: Combined Baggage (1+2) exceeds total structural limit of {((isKg ? aircraft.maxTotalBaggageWeight / KG_TO_LBS : aircraft.maxTotalBaggageWeight)).toFixed(0)} {unitLabel}
+                {t('wb.warningBaggage')} ({((isKg ? aircraft.maxTotalBaggageWeight / KG_TO_LBS : aircraft.maxTotalBaggageWeight)).toFixed(0)} {unitLabel})
               </div>
             )}
           </div>
@@ -295,13 +297,13 @@ export default function WBCalculator() {
           <div className="pt-4 border-t border-gray-100 dark:border-gray-700 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Fuel Left ({fuelUnit})</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('wb.fuelLeft')} ({fuelUnit})</label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <input
                     type="number"
                     value={flight.fuelLeftGallons === undefined ? '' : (isKg ? (flight.fuelLeftGallons * GAL_TO_LITER).toFixed(1) : flight.fuelLeftGallons)}
                     onChange={(e) => handleWeightChange('fuelLeftGallons', e.target.value)}
-                    className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700/50 pl-3 pr-10 focus:border-aviation-blue focus:ring-aviation-blue sm:text-sm py-2 text-aviation-black dark:text-white transition-colors"
+                    className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700/50 ps-3 pe-10 focus:border-aviation-blue focus:ring-aviation-blue sm:text-sm py-2 text-aviation-black dark:text-white transition-colors"
                     placeholder={isKg ? "75" : "20"}
                   />
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500 text-xs">
@@ -310,13 +312,13 @@ export default function WBCalculator() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Fuel Right ({fuelUnit})</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('wb.fuelRight')} ({fuelUnit})</label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <input
                     type="number"
                     value={flight.fuelRightGallons === undefined ? '' : (isKg ? (flight.fuelRightGallons * GAL_TO_LITER).toFixed(1) : flight.fuelRightGallons)}
                     onChange={(e) => handleWeightChange('fuelRightGallons', e.target.value)}
-                    className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700/50 pl-3 pr-10 focus:border-aviation-blue focus:ring-aviation-blue sm:text-sm py-2 text-aviation-black dark:text-white transition-colors"
+                    className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700/50 ps-3 pe-10 focus:border-aviation-blue focus:ring-aviation-blue sm:text-sm py-2 text-aviation-black dark:text-white transition-colors"
                     placeholder={isKg ? "75" : "20"}
                   />
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500 text-xs">
@@ -327,33 +329,33 @@ export default function WBCalculator() {
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex justify-between">
               <span className={results.stationWarnings?.fuelCapacity ? 'text-red-600 dark:text-red-400 font-bold animate-pulse' : ''}>
-                Total: {(((flight.fuelLeftGallons || 0) + (flight.fuelRightGallons || 0)) * (isKg ? GAL_TO_LITER : 1)).toFixed(1)} {fuelUnit}
+                {t('wb.total')}: {(((flight.fuelLeftGallons || 0) + (flight.fuelRightGallons || 0)) * (isKg ? GAL_TO_LITER : 1)).toFixed(1)} {fuelUnit}
                 {results.stationWarnings?.fuelCapacity && ` (MAX ${(aircraft.fuelCapacity * (isKg ? GAL_TO_LITER : 1)).toFixed(1)})`}
               </span>
               <span className="font-bold text-aviation-blue dark:text-blue-400 underline underline-offset-2 decoration-aviation-blue/30">
-                Weight: {(((flight.fuelLeftGallons || 0) + (flight.fuelRightGallons || 0)) * aircraft.usableFuelPerGal).toFixed(0)} lbs
+                {t('wb.weight')}: {(((flight.fuelLeftGallons || 0) + (flight.fuelRightGallons || 0)) * aircraft.usableFuelPerGal).toFixed(0)} lbs
               </span>
             </p>
           </div>
 
           {/* Fuel Burn */}
           <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Est. Fuel Burn ({fuelUnit})</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('wb.estFuelBurn')} ({fuelUnit})</label>
             <div className="mt-1 relative rounded-md shadow-sm">
               <input
                 type="number"
                 value={isKg ? (flight.fuelBurnGallons * GAL_TO_LITER).toFixed(1) : flight.fuelBurnGallons}
                 onChange={(e) => handleWeightChange('fuelBurnGallons', e.target.value)}
-                className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700/50 pl-3 pr-12 focus:border-aviation-blue focus:ring-aviation-blue sm:text-sm py-2 text-aviation-black dark:text-white transition-colors"
+                className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700/50 ps-3 pe-12 focus:border-aviation-blue focus:ring-aviation-blue sm:text-sm py-2 text-aviation-black dark:text-white transition-colors"
               />
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 right-0 rtl:left-0 rtl:right-auto pe-3 rtl:ps-3 rtl:pe-0 flex items-center pointer-events-none">
                 <span className="text-gray-500 dark:text-gray-400 sm:text-sm">{fuelUnit}</span>
               </div>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex justify-between">
-              <span>Burn Wt: {(results.fuelBurnWeight || 0).toFixed(0)} lbs</span>
+              <span>{t('wb.burnWt')}: {(results.fuelBurnWeight || 0).toFixed(0)} lbs</span>
               {results.isFuelBurnInvalid && (
-                <span className="text-red-500 dark:text-red-400 font-bold animate-pulse">! Exceeds fuel on board</span>
+                <span className="text-red-500 dark:text-red-400 font-bold animate-pulse">{t('wb.warningFuelExceeds')}</span>
               )}
             </p>
           </div>
@@ -364,7 +366,7 @@ export default function WBCalculator() {
         <div className="lg:col-span-2 space-y-6">
           {/* Chart */}
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-transparent dark:border-gray-700 transition-colors">
-            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">CG Envelope</h3>
+            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">{t('wb.cgEnvelope')}</h3>
             <CGChart
               currentWeight={results.totalWeight}
               currentCG={results.cg}
@@ -381,32 +383,32 @@ export default function WBCalculator() {
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-900/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Item</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Weight</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Moment</th>
+                  <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('wb.item')}</th>
+                  <th className="px-6 py-3 text-end text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('wb.weight')}</th>
+                  <th className="px-6 py-3 text-end text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('wb.moment')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 <tr>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Total Aircraft</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-right font-bold">{results.totalWeight.toFixed(1)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-right">{results.totalMoment.toFixed(0)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{t('wb.totalAircraft')}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-end font-bold">{results.totalWeight.toFixed(1)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-end">{results.totalMoment.toFixed(0)}</td>
                 </tr>
                 <tr>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">CG Location</td>
-                  <td colSpan={2} className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-aviation-blue dark:text-blue-400">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{t('wb.cgLocation')}</td>
+                  <td colSpan={2} className="px-6 py-4 whitespace-nowrap text-sm text-end font-bold text-aviation-blue dark:text-blue-400">
                     {results.cg.toFixed(2)} inches
                   </td>
                 </tr>
                 {/* Landing Results */}
                 <tr className="bg-gray-50 dark:bg-gray-900/30">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Landing Weight</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-right font-bold">{(results.landingWeight || 0).toFixed(1)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-right">{(results.landingMoment || 0).toFixed(0)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{t('wb.landingWeight')}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-end font-bold">{(results.landingWeight || 0).toFixed(1)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-end">{(results.landingMoment || 0).toFixed(0)}</td>
                 </tr>
                 <tr className="bg-gray-50 dark:bg-gray-900/30">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">Landing CG</td>
-                  <td colSpan={2} className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-aviation-blue dark:text-blue-400">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{t('wb.landingCG')}</td>
+                  <td colSpan={2} className="px-6 py-4 whitespace-nowrap text-sm text-end font-bold text-aviation-blue dark:text-blue-400">
                     {(results.landingCG || 0).toFixed(2)} inches
                   </td>
                 </tr>
@@ -420,9 +422,9 @@ export default function WBCalculator() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden border border-transparent dark:border-gray-700 transition-colors">
         <button
           onClick={() => setShowDetails(!showDetails)}
-          className="w-full px-6 py-4 flex items-center justify-between text-left focus:outline-none hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          className="w-full px-6 py-4 flex items-center justify-between text-start focus:outline-none hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         >
-          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">Detailed Calculation Breakdown</span>
+          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('wb.detailedCalculation')}</span>
           {showDetails ? <ChevronUp className="h-5 w-5 text-gray-500" /> : <ChevronDown className="h-5 w-5 text-gray-500" />}
         </button>
 
@@ -431,8 +433,8 @@ export default function WBCalculator() {
             {/* 1. Full-Width Weight & Balance Summary Table */}
             <div>
               <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                Weight & Balance Summary
-                <Tooltip text="Detailed breakdown showing Weight x Arm = Moment for every station.">
+                {t('wb.wbSummary')}
+                <Tooltip text={t('wb.wbSummaryTooltip')}>
                   <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
                 </Tooltip>
               </h4>
@@ -440,27 +442,27 @@ export default function WBCalculator() {
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-xs text-nowrap">
                   <thead className="bg-gray-50 dark:bg-gray-900/80 uppercase tracking-tighter font-bold text-gray-500 dark:text-gray-400">
                     <tr>
-                      <th className="px-3 py-2 text-left">Station</th>
-                      <th className="px-3 py-2 text-right">
+                      <th className="px-3 py-2 text-start">{t('wb.station')}</th>
+                      <th className="px-3 py-2 text-end">
                         <Tooltip text="The physical mass of the item in lbs.">
                           <span className="flex items-center justify-end gap-1">
-                            Weight <HelpCircle className="h-3 w-3" />
+                            {t('wb.weight')} <HelpCircle className="h-3 w-3" />
                           </span>
                         </Tooltip>
                       </th>
                       <th className="px-3 py-2 text-center text-gray-400">×</th>
-                      <th className="px-3 py-2 text-right">
+                      <th className="px-3 py-2 text-end">
                         <Tooltip text="The distance (inches) from the reference datum.">
                           <span className="flex items-center justify-end gap-1">
-                            Arm <HelpCircle className="h-3 w-3" />
+                            {t('wb.arm')} <HelpCircle className="h-3 w-3" />
                           </span>
                         </Tooltip>
                       </th>
                       <th className="px-3 py-2 text-center text-gray-400">=</th>
-                      <th className="px-3 py-2 text-right">
+                      <th className="px-3 py-2 text-end">
                         <Tooltip text="The turning force: Weight x Arm. Sum moments to find total leverage.">
                           <span className="flex items-center justify-end gap-1">
-                            Moment <HelpCircle className="h-3 w-3" />
+                            {t('wb.moment')} <HelpCircle className="h-3 w-3" />
                           </span>
                         </Tooltip>
                       </th>
@@ -469,98 +471,98 @@ export default function WBCalculator() {
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {/* Basic Empty Weight */}
                     <tr className="bg-indigo-50/30 dark:bg-indigo-900/10 transition-colors">
-                      <td className="px-3 py-2 font-medium">Basic Empty Weight</td>
-                      <td className="px-3 py-2 text-right">{aircraft.basicEmptyWeight.toFixed(1)}</td>
+                      <td className="px-3 py-2 font-medium">{t('wb.bew')}</td>
+                      <td className="px-3 py-2 text-end">{aircraft.basicEmptyWeight.toFixed(1)}</td>
                       <td className="px-3 py-2 text-center text-gray-300 dark:text-gray-600">×</td>
-                      <td className="px-3 py-2 text-right">{aircraft.emptyWeightArm.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-end">{aircraft.emptyWeightArm.toFixed(2)}</td>
                       <td className="px-3 py-2 text-center text-gray-300 dark:text-gray-600">=</td>
-                      <td className="px-3 py-2 text-right font-mono">{aircraft.basicEmptyMoment.toFixed(0)}</td>
+                      <td className="px-3 py-2 text-end font-mono">{aircraft.basicEmptyMoment.toFixed(0)}</td>
                     </tr>
                     {/* Front Pax */}
                     <tr className="dark:bg-gray-800/50 transition-colors">
-                      <td className="px-3 py-2">Pilot & Front Pax</td>
-                      <td className="px-3 py-2 text-right">{(toLbs(flight.pilotWeight, flight.unitPreference) + toLbs(flight.frontPaxWeight, flight.unitPreference)).toFixed(1)}</td>
+                      <td className="px-3 py-2">{t('wb.pilot')} & {t('wb.frontPax')}</td>
+                      <td className="px-3 py-2 text-end">{(toLbs(flight.pilotWeight, flight.unitPreference) + toLbs(flight.frontPaxWeight, flight.unitPreference)).toFixed(1)}</td>
                       <td className="px-3 py-2 text-center text-gray-300 dark:text-gray-600">×</td>
-                      <td className="px-3 py-2 text-right">37.00</td>
+                      <td className="px-3 py-2 text-end">37.00</td>
                       <td className="px-3 py-2 text-center text-gray-300 dark:text-gray-600">=</td>
-                      <td className="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400 font-medium">
+                      <td className="px-3 py-2 text-end font-mono text-gray-600 dark:text-gray-400 font-medium">
                         {((toLbs(flight.pilotWeight, flight.unitPreference) + toLbs(flight.frontPaxWeight, flight.unitPreference)) * 37).toFixed(0)}
                       </td>
                     </tr>
                     {/* Rear Passengers */}
                     <tr className="dark:bg-gray-800/50 transition-colors">
-                      <td className="px-3 py-2">Rear Passengers</td>
-                      <td className="px-3 py-2 text-right">{(toLbs(flight.rearPax1Weight, flight.unitPreference) + toLbs(flight.rearPax2Weight, flight.unitPreference)).toFixed(1)}</td>
+                      <td className="px-3 py-2">{t('wb.rearPax1')} & {t('wb.rearPax2')}</td>
+                      <td className="px-3 py-2 text-end">{(toLbs(flight.rearPax1Weight, flight.unitPreference) + toLbs(flight.rearPax2Weight, flight.unitPreference)).toFixed(1)}</td>
                       <td className="px-3 py-2 text-center text-gray-300 dark:text-gray-600">×</td>
-                      <td className="px-3 py-2 text-right">73.00</td>
+                      <td className="px-3 py-2 text-end">73.00</td>
                       <td className="px-3 py-2 text-center text-gray-300 dark:text-gray-600">=</td>
-                      <td className="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">
+                      <td className="px-3 py-2 text-end font-mono text-gray-600 dark:text-gray-400">
                         {((toLbs(flight.rearPax1Weight, flight.unitPreference) + toLbs(flight.rearPax2Weight, flight.unitPreference)) * 73).toFixed(0)}
                       </td>
                     </tr>
                     {/* Baggage 1 */}
                     <tr className="dark:bg-gray-800/50 transition-colors">
-                      <td className="px-3 py-2">Baggage Area 1</td>
-                      <td className="px-3 py-2 text-right">{toLbs(flight.baggage1Weight, flight.unitPreference).toFixed(1)}</td>
+                      <td className="px-3 py-2">{t('wb.baggage1')}</td>
+                      <td className="px-3 py-2 text-end">{toLbs(flight.baggage1Weight, flight.unitPreference).toFixed(1)}</td>
                       <td className="px-3 py-2 text-center text-gray-300 dark:text-gray-600">×</td>
-                      <td className="px-3 py-2 text-right">95.00</td>
+                      <td className="px-3 py-2 text-end">95.00</td>
                       <td className="px-3 py-2 text-center text-gray-300 dark:text-gray-600">=</td>
-                      <td className="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">
+                      <td className="px-3 py-2 text-end font-mono text-gray-600 dark:text-gray-400">
                         {(toLbs(flight.baggage1Weight, flight.unitPreference) * 95).toFixed(0)}
                       </td>
                     </tr>
                     {/* Baggage 2 */}
                     <tr className="dark:bg-gray-800/50 transition-colors">
-                      <td className="px-3 py-2">Baggage Area 2</td>
-                      <td className="px-3 py-2 text-right">{toLbs(flight.baggage2Weight, flight.unitPreference).toFixed(1)}</td>
+                      <td className="px-3 py-2">{t('wb.baggage2')}</td>
+                      <td className="px-3 py-2 text-end">{toLbs(flight.baggage2Weight, flight.unitPreference).toFixed(1)}</td>
                       <td className="px-3 py-2 text-center text-gray-300 dark:text-gray-600">×</td>
-                      <td className="px-3 py-2 text-right">123.00</td>
+                      <td className="px-3 py-2 text-end">123.00</td>
                       <td className="px-3 py-2 text-center text-gray-300 dark:text-gray-600">=</td>
-                      <td className="px-3 py-2 text-right font-mono text-gray-600 dark:text-gray-400">
+                      <td className="px-3 py-2 text-end font-mono text-gray-600 dark:text-gray-400">
                         {(toLbs(flight.baggage2Weight, flight.unitPreference) * 123).toFixed(0)}
                       </td>
                     </tr>
                     {/* Fuel (Total) */}
                     <tr className="bg-blue-50/30 dark:bg-blue-900/10 font-semibold transition-colors">
-                      <td className="px-3 py-2">Fuel ({(results.totalFuelGallons! * (isKg ? GAL_TO_LITER : 1)).toFixed(1)} {fuelUnit})</td>
-                      <td className="px-3 py-2 text-right">{(results.totalFuelGallons! * aircraft.usableFuelPerGal).toFixed(1)}</td>
+                      <td className="px-3 py-2">{t('wb.fuel')} ({(results.totalFuelGallons! * (isKg ? GAL_TO_LITER : 1)).toFixed(1)} {fuelUnit})</td>
+                      <td className="px-3 py-2 text-end">{(results.totalFuelGallons! * aircraft.usableFuelPerGal).toFixed(1)}</td>
                       <td className="px-3 py-2 text-center text-gray-300 dark:text-gray-600">×</td>
-                      <td className="px-3 py-2 text-right">48.00</td>
+                      <td className="px-3 py-2 text-end">48.00</td>
                       <td className="px-3 py-2 text-center text-gray-300 dark:text-gray-600">=</td>
-                      <td className="px-3 py-2 text-right font-mono text-blue-700 dark:text-blue-400">
+                      <td className="px-3 py-2 text-end font-mono text-blue-700 dark:text-blue-400">
                         {(results.totalFuelGallons! * aircraft.usableFuelPerGal * 48).toFixed(0)}
                       </td>
                     </tr>
                     {/* TOTAL TAKEOFF */}
                     <tr className="bg-aviation-blue text-white font-bold border-t-2 border-aviation-blue text-sm uppercase transition-colors">
-                      <td className="px-3 py-3">TOTAL TAKEOFF</td>
-                      <td className="px-3 py-3 text-right">{results.totalWeight.toFixed(1)}</td>
+                      <td className="px-3 py-3">{t('wb.totalTakeoff')}</td>
+                      <td className="px-3 py-3 text-end">{results.totalWeight.toFixed(1)}</td>
                       <td colSpan={3}></td>
-                      <td className="px-3 py-3 text-right font-mono">{results.totalMoment.toFixed(0)}</td>
+                      <td className="px-3 py-3 text-end font-mono">{results.totalMoment.toFixed(0)}</td>
                     </tr>
                     {/* CG */}
                     <tr className="bg-gray-100 dark:bg-gray-900/40 font-bold italic transition-colors">
-                      <td className="px-3 py-2">TAKEOFF CG</td>
+                      <td className="px-3 py-2">{t('wb.takeoffCG')}</td>
                       <td colSpan={4}></td>
-                      <td className="px-3 py-2 text-right font-mono text-aviation-blue dark:text-blue-400 text-sm">{results.cg.toFixed(2)} in</td>
+                      <td className="px-3 py-2 text-end font-mono text-aviation-blue dark:text-blue-400 text-sm">{results.cg.toFixed(2)} in</td>
                     </tr>
                     {/* TOTAL LANDING */}
                     <tr className="bg-indigo-600 text-white font-bold text-sm uppercase transition-colors">
                       <td className="px-3 py-3 flex items-center gap-2">
-                        TOTAL LANDING
+                        {t('wb.totalLanding')}
                         <Tooltip text={`Takeoff Total (${results.totalWeight.toFixed(1)} lbs) - Fuel Burn (${(flight.fuelBurnGallons * aircraft.usableFuelPerGal).toFixed(1)} lbs) = Landing Total. Moment deduction: -${(flight.fuelBurnGallons * aircraft.usableFuelPerGal * 48).toFixed(0)}.`}>
                           <HelpCircle className="h-3.5 w-3.5 text-indigo-200 cursor-help" />
                         </Tooltip>
                       </td>
-                      <td className="px-3 py-3 text-right">{(results.landingWeight || 0).toFixed(1)}</td>
+                      <td className="px-3 py-3 text-end">{(results.landingWeight || 0).toFixed(1)}</td>
                       <td colSpan={3}></td>
-                      <td className="px-3 py-3 text-right font-mono">{(results.landingMoment || 0).toFixed(0)}</td>
+                      <td className="px-3 py-3 text-end font-mono">{(results.landingMoment || 0).toFixed(0)}</td>
                     </tr>
                     {/* Landing CG */}
                     <tr className="bg-gray-100 dark:bg-gray-900/40 font-bold italic transition-colors">
-                      <td className="px-3 py-2">LANDING CG</td>
+                      <td className="px-3 py-2">{t('wb.landingCG')}</td>
                       <td colSpan={4}></td>
-                      <td className="px-3 py-2 text-right font-mono text-indigo-700 dark:text-indigo-400 text-sm">{(results.landingCG || 0).toFixed(2)} in</td>
+                      <td className="px-3 py-2 text-end font-mono text-indigo-700 dark:text-indigo-400 text-sm">{(results.landingCG || 0).toFixed(2)} in</td>
                     </tr>
                   </tbody>
                 </table>
@@ -574,11 +576,11 @@ export default function WBCalculator() {
               <div className="space-y-6">
                 {/* CG Math */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Center of Gravity Formula</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">{t('wb.cgFormula')}</h4>
                   <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 font-mono text-sm shadow-sm relative transition-colors">
                     <p className="text-gray-500 dark:text-gray-400 mb-1 italic flex items-center gap-1">
-                      CG = Total Moment / Total Weight
-                      <Tooltip text="Center of Gravity: The point where the aircraft would balance perfectly. Found by dividing sum of moments by sum of weights.">
+                      {t('wb.cgFormulaDesc')}
+                      <Tooltip text={t('wb.cgFormulaTooltip')}>
                         <HelpCircle className="h-3 w-3 text-gray-300 dark:text-gray-600 cursor-help" />
                       </Tooltip>
                     </p>
@@ -589,36 +591,36 @@ export default function WBCalculator() {
                     <div className="grid grid-cols-2 gap-4 mt-4 pb-6 border-b border-gray-100 dark:border-gray-700">
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Takeoff Limits</span>
+                          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('wb.takeoffLimits')}</span>
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${results.isWithinLimits ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"}`}>
-                            {results.isWithinLimits ? "OK" : "OUT"}
+                            {results.isWithinLimits ? t('wb.ok') : t('wb.out')}
                           </span>
                         </div>
                         <div className="flex gap-2 text-[11px]">
                           <div className="flex-1 bg-gray-50 dark:bg-gray-900/50 p-1.5 rounded border border-gray-100 dark:border-gray-700 text-center">
-                            <div className="text-gray-400 dark:text-gray-600 uppercase text-[8px] mb-0.5">Min</div>
+                            <div className="text-gray-400 dark:text-gray-600 uppercase text-[8px] mb-0.5">{t('wb.min')}</div>
                             <div className="font-bold text-gray-700 dark:text-gray-300">{results.limits?.takeoff.min.toFixed(2)}"</div>
                           </div>
                           <div className="flex-1 bg-gray-50 dark:bg-gray-900/50 p-1.5 rounded border border-gray-100 dark:border-gray-700 text-center">
-                            <div className="text-gray-400 dark:text-gray-600 uppercase text-[8px] mb-0.5">Max</div>
+                            <div className="text-gray-400 dark:text-gray-600 uppercase text-[8px] mb-0.5">{t('wb.max')}</div>
                             <div className="font-bold text-gray-700 dark:text-gray-300">{results.limits?.takeoff.max.toFixed(2)}"</div>
                           </div>
                         </div>
                       </div>
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Landing Limits</span>
+                          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('wb.landingLimits')}</span>
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${results.landingStatus === 'OK' ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"}`}>
-                            {results.landingStatus === 'OK' ? "OK" : "OUT"}
+                            {results.landingStatus === 'OK' ? t('wb.ok') : t('wb.out')}
                           </span>
                         </div>
                         <div className="flex gap-2 text-[11px]">
                           <div className="flex-1 bg-gray-50 dark:bg-gray-900/50 p-1.5 rounded border border-gray-100 dark:border-gray-700 text-center">
-                            <div className="text-gray-400 dark:text-gray-600 uppercase text-[8px] mb-0.5">Min</div>
+                            <div className="text-gray-400 dark:text-gray-600 uppercase text-[8px] mb-0.5">{t('wb.min')}</div>
                             <div className="font-bold text-gray-700 dark:text-gray-300">{results.limits?.landing.min.toFixed(2)}"</div>
                           </div>
                           <div className="flex-1 bg-gray-50 dark:bg-gray-900/50 p-1.5 rounded border border-gray-100 dark:border-gray-700 text-center">
-                            <div className="text-gray-400 dark:text-gray-600 uppercase text-[8px] mb-0.5">Max</div>
+                            <div className="text-gray-400 dark:text-gray-600 uppercase text-[8px] mb-0.5">{t('wb.max')}</div>
                             <div className="font-bold text-gray-700 dark:text-gray-300">{results.limits?.landing.max.toFixed(2)}"</div>
                           </div>
                         </div>
@@ -729,15 +731,15 @@ export default function WBCalculator() {
               {/* Right Column: Weight Distribution Diagram */}
               <div className="lg:sticky lg:top-4 h-fit flex flex-col">
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center justify-between transition-colors">
-                  <span>Weight Distribution</span>
-                  <div className="flex space-x-2">
-                    <div className="flex items-center space-x-1">
+                  <span>{t('wb.weightDistribution')}</span>
+                  <div className="flex gap-2">
+                    <div className="flex items-center gap-1">
                       <div className="w-2 h-2 rounded-full bg-indigo-400"></div>
-                      <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-tighter">Empty</span>
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-tighter">{t('wb.empty')}</span>
                     </div>
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center gap-1">
                       <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                      <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-tighter">Fuel</span>
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-tighter">{t('wb.fuel')}</span>
                     </div>
                   </div>
                 </h4>

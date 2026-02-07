@@ -6,7 +6,10 @@ import { getAllPresets, getPresetAircraft } from '../data/presets';
 
 const STORAGE_KEY = 'c172_aircraft_config';
 
+import { useTranslation } from 'react-i18next';
+
 export default function Config() {
+    const { t } = useTranslation();
     const [aircraft, setAircraft] = useState<Aircraft>(() => {
         const stored = localStorage.getItem(STORAGE_KEY);
         return stored ? JSON.parse(stored) : DEFAULT_AIRCRAFT;
@@ -50,7 +53,7 @@ export default function Config() {
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                 <div className="flex items-center gap-3 mb-6">
                     <Settings className="h-6 w-6 text-aviation-blue dark:text-blue-400" />
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Aircraft Configuration</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('config.title')}</h1>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -58,7 +61,7 @@ export default function Config() {
                     <div className="md:col-span-2 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/50 rounded-lg p-4 transition-colors">
                         <div className="flex items-center gap-2 mb-3">
                             <Plane className="h-5 w-5 text-aviation-blue dark:text-blue-400" />
-                            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Quick Load Preset</h3>
+                            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">{t('config.quickLoad')}</h3>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             {getAllPresets().map((preset) => (
@@ -73,16 +76,16 @@ export default function Config() {
                             ))}
                         </div>
                         <p className="text-xs text-blue-700 dark:text-blue-300 mt-3 font-medium">
-                            Click a preset to load its configuration. Don't forget to save after loading.
+                            {t('config.presetInstruction')}
                         </p>
                     </div>
 
                     {/* Identification */}
                     <div className="md:col-span-2">
-                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-400 mb-3 uppercase tracking-wide">Identification</h3>
+                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-400 mb-3 uppercase tracking-wide">{t('config.identification')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tail Number</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('config.tailNumber')}</label>
                                 <input
                                     type="text"
                                     value={aircraft.tailNumber}
@@ -96,10 +99,10 @@ export default function Config() {
 
                     {/* Main Limits */}
                     <div className="md:col-span-2">
-                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-400 mb-3 uppercase tracking-wide">Performance Limits</h3>
+                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-400 mb-3 uppercase tracking-wide">{t('config.performanceLimits')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Takeoff Weight (lbs)</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('config.maxTakeoffWeight')}</label>
                                 <input
                                     type="number"
                                     value={aircraft.maxTakeoffWeight}
@@ -112,10 +115,10 @@ export default function Config() {
 
                     {/* Station Arms */}
                     <div className="md:col-span-2">
-                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-400 mb-3 uppercase tracking-wide">Station Arms (Inches from Datum)</h3>
+                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-400 mb-3 uppercase tracking-wide">{t('config.stationArms')}</h3>
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                             <div>
-                                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Front Seats</label>
+                                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('config.frontSeats')}</label>
                                 <input
                                     type="number"
                                     value={aircraft.stationArms.pilot_front_pax}
@@ -125,7 +128,7 @@ export default function Config() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Rear Seats</label>
+                                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('config.rearSeats')}</label>
                                 <input
                                     type="number"
                                     value={aircraft.stationArms.rear_pax}
@@ -135,7 +138,7 @@ export default function Config() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Baggage 1</label>
+                                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('config.baggage1')}</label>
                                 <input
                                     type="number"
                                     value={aircraft.stationArms.baggage_1}
@@ -145,7 +148,7 @@ export default function Config() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Baggage 2</label>
+                                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('config.baggage2')}</label>
                                 <input
                                     type="number"
                                     value={aircraft.stationArms.baggage_2}
@@ -155,7 +158,7 @@ export default function Config() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Fuel</label>
+                                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('config.fuel')}</label>
                                 <input
                                     type="number"
                                     value={aircraft.stationArms.fuel}
@@ -169,10 +172,10 @@ export default function Config() {
 
                     {/* Empty Weight */}
                     <div className="md:col-span-2">
-                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-400 mb-3 uppercase tracking-wide">Empty Weight Configuration</h3>
+                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-400 mb-3 uppercase tracking-wide">{t('config.emptyWeightConfig')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Basic Empty Weight (lbs)</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('config.basicEmptyWeight')}</label>
                                 <input
                                     type="number"
                                     value={aircraft.basicEmptyWeight}
@@ -182,7 +185,7 @@ export default function Config() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Empty Weight Arm (inches)</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('config.emptyWeightArm')}</label>
                                 <input
                                     type="number"
                                     value={aircraft.emptyWeightArm}
@@ -191,7 +194,7 @@ export default function Config() {
                                     step="0.01"
                                 />
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    Total Moment: <span className="font-bold text-aviation-blue dark:text-blue-400">{(aircraft.basicEmptyWeight * aircraft.emptyWeightArm).toFixed(0)}</span> in-lbs
+                                    {t('config.totalMoment')}: <span className="font-bold text-aviation-blue dark:text-blue-400">{(aircraft.basicEmptyWeight * aircraft.emptyWeightArm).toFixed(0)}</span> in-lbs
                                 </p>
                             </div>
                         </div>
@@ -199,10 +202,10 @@ export default function Config() {
 
                     {/* Fuel */}
                     <div className="md:col-span-2">
-                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-400 mb-3 uppercase tracking-wide">Fuel</h3>
+                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-400 mb-3 uppercase tracking-wide">{t('config.fuelSection')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Usable Fuel Capacity (gallons)</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('config.usableFuel')}</label>
                                 <input
                                     type="number"
                                     value={aircraft.fuelCapacity}
@@ -212,7 +215,7 @@ export default function Config() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fuel Weight (lbs/gal)</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('config.fuelWeight')}</label>
                                 <input
                                     type="number"
                                     value={aircraft.usableFuelPerGal}
@@ -226,10 +229,10 @@ export default function Config() {
 
                     {/* Baggage Limits */}
                     <div className="md:col-span-2">
-                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-400 mb-3 uppercase tracking-wide">Baggage Limits</h3>
+                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-400 mb-3 uppercase tracking-wide">{t('config.baggageLimits')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Baggage Area 1 Max (lbs)</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('config.baggage1Max')}</label>
                                 <input
                                     type="number"
                                     value={aircraft.maxBaggage1Weight}
@@ -238,7 +241,7 @@ export default function Config() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Baggage Area 2 Max (lbs)</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('config.baggage2Max')}</label>
                                 <input
                                     type="number"
                                     value={aircraft.maxBaggage2Weight}
@@ -247,7 +250,7 @@ export default function Config() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total Baggage Max (lbs)</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('config.totalBaggageMax')}</label>
                                 <input
                                     type="number"
                                     value={aircraft.maxTotalBaggageWeight}
@@ -266,18 +269,18 @@ export default function Config() {
                         className="flex items-center gap-2 px-6 py-2 bg-aviation-blue hover:bg-blue-700 text-white rounded-md font-medium transition shadow-sm active:scale-95"
                     >
                         <Save className="h-4 w-4" />
-                        Save Configuration
+                        {t('config.save')}
                     </button>
                     <button
                         onClick={handleReset}
                         className="flex items-center gap-2 px-6 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md font-medium transition shadow-sm active:scale-95"
                     >
                         <RotateCcw className="h-4 w-4" />
-                        Reset to Default
+                        {t('config.reset')}
                     </button>
                     {saved && (
                         <div className="flex items-center text-green-600 dark:text-green-400 font-medium ml-4 animate-in fade-in duration-300">
-                            ✓ Configuration saved successfully
+                            ✓ {t('config.savedSuccess')}
                         </div>
                     )}
                 </div>
@@ -285,10 +288,9 @@ export default function Config() {
 
             {/* Info Box */}
             <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/50 rounded-lg p-4 transition-colors">
-                <h4 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">Note</h4>
+                <h4 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">{t('config.noteTitle')}</h4>
                 <p className="text-sm text-blue-800 dark:text-blue-200">
-                    These settings are saved to your browser's local storage and will persist across sessions.
-                    The empty weight moment is automatically calculated from the weight and arm values.
+                    {t('config.noteContent')}
                 </p>
             </div>
         </div>

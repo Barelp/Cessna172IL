@@ -6,4 +6,6 @@ git add .
 git commit -m "added new features"
 
 git push 
+
+
 והאתר יתעדכן מעצמו תוך כמה שניות!

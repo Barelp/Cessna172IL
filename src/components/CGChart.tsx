@@ -11,6 +11,7 @@ import {
 import { Scatter } from 'react-chartjs-2';
 import { useMemo } from 'react';
 import { useTheme } from '../App';
+import { useTranslation } from 'react-i18next';
 
 ChartJS.register(
     LinearScale,
@@ -34,6 +35,7 @@ interface CGChartProps {
 
 export default function CGChart({ currentWeight, currentCG, isWithinLimits, landingWeight, landingCG, envelopePoints, unitPreference = 'LBS' }: CGChartProps) {
     const { theme } = useTheme();
+    const { t } = useTranslation();
     const isDark = theme === 'dark';
     const isKg = unitPreference === 'KG';
     const weightFactor = isKg ? 1 / 2.20462 : 1;
@@ -66,7 +68,7 @@ export default function CGChart({ currentWeight, currentCG, isWithinLimits, land
         return {
             datasets: [
                 {
-                    label: 'Normal Category Envelope',
+                    label: t('chart.normalEnvelope'),
                     data: convertedPoints,
                     borderColor: isDark ? 'rgba(96, 165, 250, 0.8)' : 'rgba(54, 162, 235, 0.5)',
                     backgroundColor: isDark ? 'rgba(96, 165, 250, 0.15)' : 'rgba(54, 162, 235, 0.1)',
@@ -76,7 +78,7 @@ export default function CGChart({ currentWeight, currentCG, isWithinLimits, land
                     order: 2,
                 },
                 {
-                    label: 'Current Flight',
+                    label: t('chart.currentFlight'),
                     data: [{ x: currentCG, y: convertWeight(currentWeight) }],
                     backgroundColor: isWithinLimits ? (isDark ? '#4ade80' : 'green') : (isDark ? '#f87171' : 'red'),
                     borderColor: isWithinLimits ? (isDark ? '#4ade80' : 'green') : (isDark ? '#f87171' : 'red'),
@@ -85,7 +87,7 @@ export default function CGChart({ currentWeight, currentCG, isWithinLimits, land
                     order: 1,
                 },
                 {
-                    label: 'Landing',
+                    label: t('chart.landing'),
                     data: landingWeight && landingCG ? [{ x: landingCG, y: convertWeight(landingWeight) }] : [],
                     backgroundColor: isDark ? '#fb923c' : 'orange',
                     borderColor: isDark ? '#fb923c' : 'orange',
@@ -104,7 +106,7 @@ export default function CGChart({ currentWeight, currentCG, isWithinLimits, land
                 position: 'bottom' as const,
                 title: {
                     display: true,
-                    text: 'Center of Gravity (Inches Aft of Datum)',
+                    text: t('chart.xAxis'),
                     color: isDark ? '#9ca3af' : '#666'
                 },
                 grid: {
@@ -122,7 +124,7 @@ export default function CGChart({ currentWeight, currentCG, isWithinLimits, land
                 type: 'linear' as const,
                 title: {
                     display: true,
-                    text: `Aircraft Weight (${isKg ? 'KG' : 'Lbs'})`,
+                    text: `${t('chart.yAxis')} (${isKg ? 'KG' : 'Lbs'})`,
                     color: isDark ? '#9ca3af' : '#666'
                 },
                 ticks: {
