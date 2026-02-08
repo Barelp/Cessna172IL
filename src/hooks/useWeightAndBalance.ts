@@ -7,7 +7,7 @@ export const KG_TO_LBS = 2.20462;
 export const GAL_TO_LITER = 3.78541;
 
 export function useWeightAndBalance(initialFlight?: FlightLog) {
-    const [flight, setFlight] = useState<FlightLog>(initialFlight || {
+    const [flight, setFlight] = useState<FlightLog>(() => initialFlight || {
         id: Date.now().toString(),
         date: new Date().toISOString().split('T')[0],
         aircraftId: DEFAULT_AIRCRAFT.id,

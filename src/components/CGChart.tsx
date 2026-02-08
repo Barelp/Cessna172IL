@@ -6,12 +6,14 @@ import {
     Tooltip,
     Legend,
     ScatterController,
-    CategoryScale
+    CategoryScale,
+    type TooltipItem
 } from 'chart.js';
 import { Scatter } from 'react-chartjs-2';
 import { useMemo } from 'react';
-import { useTheme } from '../App';
+import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import type { UnitSystem } from '../types';
 
 ChartJS.register(
     LinearScale,
@@ -30,7 +32,7 @@ interface CGChartProps {
     landingWeight?: number;
     landingCG?: number;
     envelopePoints?: { x: number; y: number }[];
-    unitPreference?: 'LBS' | 'KG';
+    unitPreference?: UnitSystem;
 }
 
 export default function CGChart({ currentWeight, currentCG, isWithinLimits, landingWeight, landingCG, envelopePoints, unitPreference = 'LBS' }: CGChartProps) {
@@ -41,9 +43,9 @@ export default function CGChart({ currentWeight, currentCG, isWithinLimits, land
     const weightFactor = isKg ? 1 / 2.20462 : 1;
     const isRtl = i18n.dir() === 'rtl';
 
-    const convertWeight = (lbs: number) => lbs * weightFactor;
-
     const data = useMemo(() => {
+        const convertWeight = (lbs: number) => lbs * weightFactor;
+
         const points = envelopePoints || [
             { x: 35.0, y: 1500 },
             { x: 35.0, y: 1950 }, // Generic fallback
@@ -98,7 +100,7 @@ export default function CGChart({ currentWeight, currentCG, isWithinLimits, land
                 }
             ]
         };
-    }, [currentWeight, currentCG, isWithinLimits, landingWeight, landingCG, isDark, envelopePoints, unitPreference, t]);
+    }, [currentWeight, currentCG, isWithinLimits, landingWeight, landingCG, isDark, envelopePoints, t, weightFactor]);
 
     const options = {
         scales: {
@@ -156,7 +158,11 @@ export default function CGChart({ currentWeight, currentCG, isWithinLimits, land
                 borderColor: isDark ? '#374151' : '#e5e7eb',
                 borderWidth: 1,
                 callbacks: {
-                    label: (ctx: any) => `CG: ${ctx.parsed.x.toFixed(1)}, Wt: ${ctx.parsed.y.toFixed(0)} ${isKg ? 'kg' : 'lbs'}`
+                    label: (ctx: TooltipItem<'scatter'>) => {
+                        const x = ctx.parsed?.x || 0;
+                        const y = ctx.parsed?.y || 0;
+                        return `CG: ${x.toFixed(1)}, Wt: ${y.toFixed(0)} ${isKg ? 'kg' : 'lbs'}`;
+                    }
                 }
             }
         },

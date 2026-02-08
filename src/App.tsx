@@ -1,22 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import WBCalculator from './components/WBCalculator';
 import Config from './pages/Config';
-
-// Theme Context
-interface ThemeContextType {
-  theme: 'light' | 'dark';
-  toggleTheme: () => void;
-}
-
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-export const useTheme = () => {
-  const context = useContext(ThemeContext);
-  if (!context) throw new Error('useTheme must be used within a ThemeProvider');
-  return context;
-};
+import { ThemeContext } from './context/ThemeContext';
 
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {

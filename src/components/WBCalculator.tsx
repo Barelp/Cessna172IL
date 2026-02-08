@@ -5,6 +5,7 @@ import { Package, ChevronDown, ChevronUp, HelpCircle, PlaneTakeoff, PlaneLanding
 import { getAllPresets, getPresetAircraft } from '../data/presets';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { UnitSystem } from '../types';
 
 const Tooltip = ({ text, children }: { text: string; children: React.ReactNode }) => (
   <div className="group relative inline-block">
@@ -27,7 +28,7 @@ export default function WBCalculator() {
   const fuelUnit = isKg ? 'L' : 'gal';
 
   // Helper to convert display value to LBS for calculation
-  const toLbs = (val: number, unit: any) => unit === 'KG' ? val * KG_TO_LBS : val;
+  const toLbs = (val: number, unit: UnitSystem) => unit === 'KG' ? val * KG_TO_LBS : val;
 
   // Handlers
   const handleWeightChange = (field: keyof typeof flight, value: string) => {
@@ -225,7 +226,7 @@ export default function WBCalculator() {
           </div>
 
           {/* Form Fields */}
-          {[
+          {([
             { id: 'pilotWeight', label: t('wb.pilot'), max: aircraft.maxFrontSeatWeight, isCombined: true },
             { id: 'frontPaxWeight', label: t('wb.frontPax'), max: aircraft.maxFrontSeatWeight, isCombined: true },
             { id: 'rearPax1Weight', label: t('wb.rearPax1'), max: aircraft.maxRearSeatWeight, isCombined: true },
@@ -242,23 +243,29 @@ export default function WBCalculator() {
               max: aircraft.maxBaggage2Weight,
               warning: results.stationWarnings?.baggage2
             },
-          ].map((field) => (
+          ] as {
+            id: keyof typeof flight;
+            label: string;
+            max?: number;
+            isCombined?: boolean;
+            warning?: boolean;
+          }[]).map((field) => (
             <div key={field.id}>
               <div className="flex justify-between items-center">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{field.label}</label>
-                {(field as any).max && (
+                {field.max && (
                   <span className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-tighter">
-                    {(field as any).isCombined ? t('wb.rowMax') + ': ' : t('wb.max') + ': '}
-                    {((isKg ? (field as any).max / KG_TO_LBS : (field as any).max)).toFixed(0)} {unitLabel}
+                    {field.isCombined ? t('wb.rowMax') + ': ' : t('wb.max') + ': '}
+                    {((isKg ? field.max / KG_TO_LBS : field.max)).toFixed(0)} {unitLabel}
                   </span>
                 )}
               </div>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <input
                   type="number"
-                  value={(flight as any)[field.id] === undefined ? '' : (flight as any)[field.id]}
-                  onChange={(e) => handleWeightChange(field.id as any, e.target.value)}
-                  className={`block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700/50 ps-3 pe-12 sm:text-sm py-2 text-aviation-black dark:text-white focus:ring-aviation-blue focus:border-aviation-blue transition-colors ${(field as any).warning ? 'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+                  value={flight[field.id] === undefined ? '' : flight[field.id]}
+                  onChange={(e) => handleWeightChange(field.id, e.target.value)}
+                  className={`block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700/50 ps-3 pe-12 sm:text-sm py-2 text-aviation-black dark:text-white focus:ring-aviation-blue focus:border-aviation-blue transition-colors ${field.warning ? 'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
                     }`}
                   placeholder="0"
                 />
@@ -266,7 +273,7 @@ export default function WBCalculator() {
                   <span className="text-gray-500 dark:text-gray-400 sm:text-sm">{unitLabel}</span>
                 </div>
               </div>
-              {(field as any).warning && (
+              {field.warning && (
                 <p className="text-[10px] text-red-500 font-bold mt-1 animate-pulse">
                   {t('wb.warningExceeds')}
                 </p>

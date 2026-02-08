@@ -8,7 +8,7 @@ export default function LanguageSwitcher() {
     useEffect(() => {
         document.documentElement.dir = i18n.dir();
         document.documentElement.lang = i18n.language;
-    }, [i18n.language]);
+    }, [i18n, i18n.language]);
 
     const changeLanguage = (lang: string) => {
         i18n.changeLanguage(lang);

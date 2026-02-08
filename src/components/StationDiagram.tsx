@@ -1,4 +1,4 @@
-import { useTheme } from '../App';
+import { useTheme } from '../context/ThemeContext';
 import aircraftTopView from '../resources/c172_topview.png';
 import { useTranslation } from 'react-i18next';
 

@@ -1,7 +1,7 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Plane, Settings, Gauge, Sun, Moon } from 'lucide-react';
 import cessnaBanner from '../resources/cessna_wallpaper.jpg';
-import { useTheme } from '../App';
+import { useTheme } from '../context/ThemeContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 
