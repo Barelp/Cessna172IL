@@ -1,21 +1,12 @@
 import { useWeightAndBalance, KG_TO_LBS, GAL_TO_LITER } from '../hooks/useWeightAndBalance';
 import CGChart from './CGChart';
 import StationDiagram from './StationDiagramNew';
+import Tooltip from './Tooltip';
 import { Package, ChevronDown, ChevronUp, HelpCircle, PlaneTakeoff, PlaneLanding, Trash2, Settings, Users } from 'lucide-react';
 import { getAllPresets, getPresetAircraft } from '../data/presets';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { UnitSystem } from '../types';
-
-const Tooltip = ({ text, children }: { text: string; children: React.ReactNode }) => (
-  <div className="group relative inline-block">
-    {children}
-    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-[100] text-center font-normal normal-case tracking-normal transform scale-95 group-hover:scale-100 whitespace-normal leading-relaxed">
-      {text}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-8 border-transparent border-b-gray-900"></div>
-    </div>
-  </div>
-);
 
 export default function WBCalculator() {
   const { flight, setFlight, aircraft, setAircraft, results } = useWeightAndBalance();
@@ -467,7 +458,7 @@ export default function WBCalculator() {
                       </th>
                       <th className="px-3 py-2 text-center text-gray-400">=</th>
                       <th className="px-3 py-2 text-end">
-                        <Tooltip text="The turning force: Weight x Arm. Sum moments to find total leverage.">
+                        <Tooltip text="The turning force: Weight x Arm. Sum moments to find total leverage." alignment="right">
                           <span className="flex items-center justify-end gap-1">
                             {t('wb.moment')} <HelpCircle className="h-3 w-3" />
                           </span>
@@ -739,16 +730,7 @@ export default function WBCalculator() {
               <div className="lg:sticky lg:top-4 h-fit flex flex-col">
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center justify-between transition-colors">
                   <span>{t('wb.weightDistribution')}</span>
-                  <div className="flex gap-2">
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 rounded-full bg-indigo-400"></div>
-                      <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-tighter">{t('wb.empty')}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                      <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-tighter">{t('wb.fuel')}</span>
-                    </div>
-                  </div>
+
                 </h4>
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 overflow-hidden flex-1 transition-colors">
                   <StationDiagram
