@@ -1,6 +1,6 @@
 import { useWeightAndBalance, KG_TO_LBS, GAL_TO_LITER } from '../hooks/useWeightAndBalance';
 import CGChart from './CGChart';
-import StationDiagram from './StationDiagram';
+import StationDiagram from './StationDiagramNew';
 import { Package, ChevronDown, ChevronUp, HelpCircle, PlaneTakeoff, PlaneLanding, Trash2, Settings, Users } from 'lucide-react';
 import { getAllPresets, getPresetAircraft } from '../data/presets';
 import { useState } from 'react';
@@ -738,7 +738,7 @@ export default function WBCalculator() {
               {/* Right Column: Weight Distribution Diagram */}
               <div className="lg:sticky lg:top-4 h-fit flex flex-col">
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center justify-between transition-colors">
-                  <span>{t('wb.weightDistribution')}</span>
+                  <span>{t('wb.weightDistribution')} (v2)</span>
                   <div className="flex gap-2">
                     <div className="flex items-center gap-1">
                       <div className="w-2 h-2 rounded-full bg-indigo-400"></div>
