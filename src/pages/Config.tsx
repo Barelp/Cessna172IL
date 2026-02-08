@@ -17,7 +17,7 @@ export default function Config() {
 
     const [saved, setSaved] = useState(false);
 
-    const handleChange = (field: keyof Aircraft, value: any) => {
+    const handleChange = <K extends keyof Aircraft>(field: K, value: Aircraft[K]) => {
         setAircraft(prev => ({ ...prev, [field]: value }));
         setSaved(false);
     };
