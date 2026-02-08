@@ -104,6 +104,14 @@ export default function WBCalculator() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-colors duration-300">
 
+      {/* Disclaimer Banner */}
+      <div className="bg-amber-100 dark:bg-amber-900/30 border-l-4 border-amber-500 text-amber-700 dark:text-amber-400 p-4 mb-6 rounded-r shadow-sm flex items-start gap-3">
+        <HelpCircle className="h-6 w-6 flex-shrink-0" />
+        <p className="font-bold text-sm md:text-base">
+          {t('wb.disclaimer')}
+        </p>
+      </div>
+
       {/* Header Summary Bar */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8 flex flex-wrap items-center justify-between gap-6 border-l-8 border-aviation-blue transition-colors">
         <div>
