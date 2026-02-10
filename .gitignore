@@ -30,3 +30,6 @@ dist/
 win32-x64-template-*/
 *-win32-x64/
 .env
+
+# Build info (auto-generated)
+src/build-info.json

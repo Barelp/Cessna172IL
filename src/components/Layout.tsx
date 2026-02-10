@@ -4,6 +4,7 @@ import cessnaBanner from '../resources/cessna_wallpaper.jpg';
 import { useTheme } from '../context/ThemeContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
+import BuildVersion from './BuildVersion';
 
 export default function Layout() {
     const location = useLocation();
@@ -76,6 +77,9 @@ export default function Layout() {
                     <span className="text-[10px] mt-1 uppercase font-bold tracking-tighter text-gray-400">{t('nav.config')}</span>
                 </Link>
             </nav>
+
+            {/* Build Version Display */}
+            <BuildVersion />
         </div>
     );
 }
