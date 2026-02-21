@@ -33,3 +33,6 @@ win32-x64-template-*/
 
 # Build info (auto-generated)
 src/build-info.json
+
+.vercel
+.env*.local

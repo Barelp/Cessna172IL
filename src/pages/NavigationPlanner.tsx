@@ -1,12 +1,18 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Map, Plus, Trash2, Calculator } from 'lucide-react';
+import { Map, Plus, Trash2, Calculator, PlusCircle, Send } from 'lucide-react';
 import type { FlightDetails, FlightLeg } from '../types/navigation';
 import { waypoints } from '../data/waypoints';
 import { getAllPresets } from '../data/presets';
 
+const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+};
+
 const initialDetails: FlightDetails = {
     takeoffTime: '08:00',
+    flightDate: getTodayDate(),
     cruiseGS: 90,
     cruiseGPH: 8,
     taxiFuel: 1.1,
@@ -16,12 +22,15 @@ const initialDetails: FlightDetails = {
     finalDest: '',
     altName: '',
     altFreq: '',
-    registration: '',
+    pilotName: '',
+    pilotLicense: '',
+    pilotPhone: '',
+    pilotEmail: '',
     paxCount: '',
-    departureDest: '',
     flightEndurance: '',
     aircraftType: '172',
-    callsign: ''
+    callsign: '',
+    flightRules: 'V'
 };
 
 export default function NavigationPlanner() {
@@ -31,6 +40,12 @@ export default function NavigationPlanner() {
 
     const airportOptions = ['', 'LLHZ', 'LLHA', 'LLMG', 'LLIB'];
     const callsignOptions = ['', ...getAllPresets().map(p => p.tailNumber)];
+    const [icaoPlan, setIcaoPlan] = useState<string | null>(null);
+    const [icaoError, setIcaoError] = useState<string | null>(null);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [isSendingEmail, setIsSendingEmail] = useState(false);
+    const [emailStatus, setEmailStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+    const [sentEmailsLogs, setSentEmailsLogs] = useState<Array<{ to: string, subject: string, time: string }>>([]);
 
     // Format hours to HH:mm:ss
     const formatDuration = (hours: number) => {
@@ -51,7 +66,22 @@ export default function NavigationPlanner() {
     };
 
     const handleDetailChange = (field: keyof FlightDetails, value: string | number) => {
-        setDetails(prev => ({ ...prev, [field]: value }));
+        let parsedValue = value;
+        if (typeof value === 'string') {
+            if (field === 'paxCount') {
+                parsedValue = value.replace(/[^0-9]/g, '');
+            } else if (field === 'pilotName') {
+                parsedValue = value.replace(/[^a-zA-Z\s]/g, '');
+            } else if (field === 'flightEndurance') {
+                parsedValue = value.replace(/[^0-9.]/g, '');
+                // Prevent multiple decimal points
+                const parts = parsedValue.split('.');
+                if (parts.length > 2) {
+                    parsedValue = parts[0] + '.' + parts.slice(1).join('');
+                }
+            }
+        }
+        setDetails(prev => ({ ...prev, [field]: parsedValue }));
     };
 
     const handleLegChange = (id: string, field: keyof FlightLeg, value: string | number) => {
@@ -76,6 +106,28 @@ export default function NavigationPlanner() {
             vorDist: ''
         };
         setLegs(prev => [...prev, newLeg]);
+    };
+
+    const insertLeg = (index: number) => {
+        const prevLeg = index > 0 ? legs[index - 1] : null;
+        const newLeg: FlightLeg = {
+            id: crypto.randomUUID(),
+            to: '',
+            from: prevLeg ? prevLeg.to : '',
+            distNM: '',
+            heading: '',
+            altitude: '',
+            trend: '',
+            control: '',
+            primaryFreq: '',
+            secondaryFreq: '',
+            vorName: '',
+            vorRadial: '',
+            vorDist: ''
+        };
+        const newLegs = [...legs];
+        newLegs.splice(index, 0, newLeg);
+        setLegs(newLegs);
     };
 
     const removeLeg = (id: string) => {
@@ -116,6 +168,165 @@ export default function NavigationPlanner() {
     const reqFuel45Min = reqFuelNoReserve + reserve45;
     const reqFuel60Min = reqFuelNoReserve + gph;
 
+    const validateForm = (): string[] => {
+        const errors: string[] = [];
+        if (legs.length === 0) errors.push(t('navPlanner.errors.noLegs'));
+        if (!details.origin) errors.push(t('navPlanner.errors.noOrigin'));
+        if (!details.finalDest) errors.push(t('navPlanner.errors.noDest'));
+        if (!details.pilotName) errors.push(t('navPlanner.errors.noPilotName'));
+        if (!details.pilotLicense) errors.push(t('navPlanner.errors.noLicense'));
+        if (!details.pilotPhone) errors.push(t('navPlanner.errors.noPhone'));
+        if (!details.paxCount) errors.push(t('navPlanner.errors.noPax'));
+        if (!details.flightEndurance) errors.push(t('navPlanner.errors.noEndurance'));
+        if (!details.callsign) errors.push(t('navPlanner.errors.noCallsign'));
+        if (!details.flightRules) errors.push(t('navPlanner.errors.noRules'));
+        if (!details.flightDate) errors.push(t('navPlanner.errors.noDate'));
+
+        // Additional format validations
+        if (details.paxCount && !/^[0-9]+$/.test(details.paxCount)) errors.push(t('navPlanner.errors.invalidPax'));
+        if (details.pilotName && !/^[a-zA-Z\s]+$/.test(details.pilotName)) errors.push(t('navPlanner.errors.invalidPilotName'));
+        if (details.flightEndurance && !/^[0-9.]+$/.test(details.flightEndurance)) errors.push(t('navPlanner.errors.invalidEndurance'));
+        if (details.pilotEmail && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(details.pilotEmail)) errors.push(t('navPlanner.errors.invalidEmail'));
+
+        return errors;
+    };
+
+    const generateICAO = () => {
+        const validationErrors = validateForm();
+        if (validationErrors.length > 0) {
+            setIcaoError(`${t('navPlanner.validationErrorTitle')}\n• ${validationErrors.join('\n• ')}`);
+            setIcaoPlan(null);
+            return;
+        }
+
+        // Validate waypoints (ignore empty, origin, destination, and known airports)
+        const hasInvalidWaypoint = legs.some(l => {
+            if (!l.to) return false;
+            const code = l.to.split('-')[0].trim().split(' ')[0].trim().toUpperCase();
+            const isAirport = airportOptions.includes(code) || code === details.origin.toUpperCase() || code === details.finalDest.toUpperCase();
+            if (isAirport) return false;
+            return !waypoints.some(wp => wp.code.toUpperCase() === code);
+        });
+
+        if (hasInvalidWaypoint) {
+            setIcaoError(t('navPlanner.invalidWaypointError'));
+            setIcaoPlan(null);
+            return;
+        }
+
+        setIcaoError(null);
+
+        // Date formatted as YYMMDD from the flightDate field
+        const dateParts = details.flightDate.split('-');
+        let dof = '';
+        if (dateParts.length === 3) {
+            const yy = dateParts[0].slice(-2);
+            dof = `${yy}${dateParts[1]}${dateParts[2]}`;
+        }
+
+        // Format speed (N + 4 digits: e.g. 90 -> N0090)
+        const speed = `N${String(Math.round(gs)).padStart(4, '0')}`;
+
+        // Format time (HHMM)
+        const time = details.takeoffTime.replace(':', '');
+
+        // Format total EET (Estimated Enroute Time)
+        const mEetHours = Math.floor(totalTimeHours);
+        const mEetMins = Math.round((totalTimeHours - mEetHours) * 60);
+        const eet = `${String(mEetHours).padStart(2, '0')}${String(mEetMins).padStart(2, '0')}`;
+
+        // Format Endurance (e.g. from decimal "4.5" -> "0430")
+        const enduranceVal = parseFloat(details.flightEndurance) || 0;
+        const eHrs = Math.floor(enduranceVal);
+        const eMins = Math.round((enduranceVal - eHrs) * 60);
+        const enduranceStr = `${String(eHrs).padStart(2, '0')}${String(eMins).padStart(2, '0')}`;
+
+        // Build Route from legs. The datalist format is "CODE - Name", so we extract just the CODE part.
+        // We also filter out any points that are exactly the Origin or Destination codes.
+        const allPoints: string[] = [];
+        if (legs.length > 0 && legs[0].from) {
+            allPoints.push(legs[0].from.split('-')[0].trim().split(' ')[0].trim());
+        }
+        legs.forEach(l => {
+            if (l.to) {
+                allPoints.push(l.to.split('-')[0].trim().split(' ')[0].trim());
+            }
+        });
+
+        const routePoints = allPoints.filter(point => {
+            return point && point !== details.origin && point !== details.finalDest;
+        });
+        const routeStr = routePoints.length > 0 ? routePoints.join(' ') : 'DCT';
+
+        const ruleString = details.flightRules === 'I' ? 'IFR' : 'VFR';
+        const plan = `(FPL-${details.callsign}-${details.flightRules}G
+-C172/L-S/C
+-${details.origin}${time}
+-${speed}${ruleString} ${routeStr}
+-${details.finalDest}${eet}
+-DOF/${dof} RMK/PIC ${details.pilotName.trim()} LICENSE ${details.pilotLicense} CELL ${details.pilotPhone}
+-E/${enduranceStr} P/${details.paxCount.padStart(3, '0')})`.toUpperCase();
+
+        // Validate that no Hebrew characters slipped into the final ICAO plan (e.g. from user input)
+        if (/[\u0590-\u05FF]/.test(plan)) {
+            setIcaoError(t('navPlanner.hebrewCharacterError'));
+            setIcaoPlan(null);
+            return;
+        }
+
+        setIcaoPlan(plan);
+        setIsGenerating(true);
+        setTimeout(() => setIsGenerating(false), 800);
+    };
+
+    const sendEmail = async () => {
+        if (!icaoPlan) return;
+
+        if (sentEmailsLogs.length > 0) {
+            const confirmed = window.confirm(t('navPlanner.emailResendConfirm'));
+            if (!confirmed) return;
+        }
+
+        setIsSendingEmail(true);
+        setEmailStatus(null);
+        try {
+            const response = await fetch('/api/send-flight-plan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    plan: icaoPlan,
+                    callsign: details.callsign,
+                    date: details.flightDate,
+                    takeoffTime: details.takeoffTime,
+                    pilotEmail: details.pilotEmail,
+                    pilotName: details.pilotName,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to send email');
+            }
+
+            setEmailStatus({ type: 'success', message: t('navPlanner.emailSent') });
+            if (data.details) {
+                setSentEmailsLogs(prev => [...prev, {
+                    ...data.details,
+                    time: new Date().toLocaleTimeString('he-IL')
+                }]);
+            }
+        } catch (error) {
+            console.error(error);
+            setEmailStatus({ type: 'error', message: t('navPlanner.emailError') });
+        } finally {
+            setIsSendingEmail(false);
+            setTimeout(() => setEmailStatus(null), 5000); // clear status after 5s
+        }
+    };
+
     return (
         <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 pb-24">
             <div className="flex items-center gap-3 border-b border-gray-200 dark:border-gray-700 pb-4">
@@ -136,42 +347,7 @@ export default function NavigationPlanner() {
             </div>
 
             {/* General Details Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                {/* Flight Status */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-200 dark:border-gray-700">
-                    <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{t('navPlanner.flightStatus')}</h3>
-                    </div>
-                    <div className="p-4 grid grid-cols-1 gap-4">
-                        <div className="grid grid-cols-3 items-center gap-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 col-span-1">{t('navPlanner.registration')}</label>
-                            <input type="text" value={details.registration} onChange={e => handleDetailChange('registration', e.target.value)} className="col-span-2 p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm text-center" />
-                        </div>
-                        <div className="grid grid-cols-3 items-center gap-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 col-span-1">{t('navPlanner.paxCount')}</label>
-                            <input type="text" value={details.paxCount} onChange={e => handleDetailChange('paxCount', e.target.value)} className="col-span-2 p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm text-center" />
-                        </div>
-                        <div className="grid grid-cols-3 items-center gap-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 col-span-1">{t('navPlanner.departureDest')}</label>
-                            <input type="text" value={details.departureDest} onChange={e => handleDetailChange('departureDest', e.target.value)} className="col-span-2 p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm text-center" />
-                        </div>
-                        <div className="grid grid-cols-3 items-center gap-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 col-span-1">{t('navPlanner.flightEndurance')}</label>
-                            <input type="text" value={details.flightEndurance} onChange={e => handleDetailChange('flightEndurance', e.target.value)} className="col-span-2 p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm text-center" />
-                        </div>
-                        <div className="grid grid-cols-3 items-center gap-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 col-span-1">{t('navPlanner.aircraftType')}</label>
-                            <input type="text" value="Cessna 172" readOnly className="col-span-2 p-1.5 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-900 text-sm text-center text-gray-500" />
-                        </div>
-                        <div className="grid grid-cols-3 items-center gap-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 col-span-1">{t('navPlanner.callsign')}</label>
-                            <select value={details.callsign} onChange={e => handleDetailChange('callsign', e.target.value)} className="col-span-2 p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm text-center font-bold">
-                                {callsignOptions.map(opt => <option key={`callsign-${opt}`} value={opt}>{opt || '---'}</option>)}
-                            </select>
-                        </div>
-                    </div>
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                 {/* General Details & Flight Route */}
                 <div className="lg:col-span-2 flex flex-col gap-6">
@@ -183,10 +359,40 @@ export default function NavigationPlanner() {
                                 {t('navPlanner.generalDetails')}
                             </h3>
                         </div>
-                        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('navPlanner.flightDate')}</label>
+                                <input type="date" value={details.flightDate} onChange={e => handleDetailChange('flightDate', e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-aviation-blue" />
+                            </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('navPlanner.takeoffTime')}</label>
-                                <input type="time" value={details.takeoffTime} onChange={e => handleDetailChange('takeoffTime', e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-aviation-blue" />
+                                <div className="flex bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-aviation-blue">
+                                    <input
+                                        type="number"
+                                        min="0" max="23"
+                                        placeholder="HH"
+                                        value={details.takeoffTime.split(':')[0]}
+                                        onChange={e => {
+                                            const val = e.target.value.padStart(2, '0').slice(-2);
+                                            handleDetailChange('takeoffTime', `${val}:${details.takeoffTime.split(':')[1] || '00'}`);
+                                        }}
+                                        className="w-full p-2 bg-transparent text-center focus:outline-none appearance-none m-0"
+                                        style={{ MozAppearance: 'textfield' }}
+                                    />
+                                    <span className="flex items-center text-gray-500 font-bold">:</span>
+                                    <input
+                                        type="number"
+                                        min="0" max="59"
+                                        placeholder="MM"
+                                        value={details.takeoffTime.split(':')[1] || '00'}
+                                        onChange={e => {
+                                            const val = e.target.value.padStart(2, '0').slice(-2);
+                                            handleDetailChange('takeoffTime', `${details.takeoffTime.split(':')[0] || '00'}:${val}`);
+                                        }}
+                                        className="w-full p-2 bg-transparent text-center focus:outline-none appearance-none m-0"
+                                        style={{ MozAppearance: 'textfield' }}
+                                    />
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('navPlanner.cruiseGS')}</label>
@@ -284,11 +490,11 @@ export default function NavigationPlanner() {
                                 <th className="px-3 py-2">{t('navPlanner.legsTable.vorName')}</th>
                                 <th className="px-3 py-2">{t('navPlanner.legsTable.vorRadial')}</th>
                                 <th className="px-3 py-2">{t('navPlanner.legsTable.vorDist')}</th>
-                                <th className="px-3 py-2 text-center">X</th>
+                                <th className="px-3 py-2 text-center whitespace-nowrap">+/-</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {calculatedLegs.map((leg) => (
+                            {calculatedLegs.map((leg, index) => (
                                 <tr key={leg.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                     <td className="px-2 py-1"><input type="text" list="waypoints-list" value={leg.from} onChange={e => handleLegChange(leg.id, 'from', e.target.value)} className="w-16 sm:w-20 p-1 border rounded text-xs bg-white dark:bg-gray-800 dark:border-gray-600" /></td>
                                     <td className="px-2 py-1"><input type="text" list="waypoints-list" value={leg.to} onChange={e => handleLegChange(leg.id, 'to', e.target.value)} className="w-16 sm:w-20 p-1 border rounded text-xs bg-white dark:bg-gray-800 dark:border-gray-600" /></td>
@@ -316,8 +522,11 @@ export default function NavigationPlanner() {
                                     <td className="px-2 py-1"><input type="text" value={leg.vorRadial} onChange={e => handleLegChange(leg.id, 'vorRadial', e.target.value)} className="w-12 p-1 border rounded text-xs bg-white dark:bg-gray-800 dark:border-gray-600 text-center" /></td>
                                     <td className="px-2 py-1"><input type="text" value={leg.vorDist} onChange={e => handleLegChange(leg.id, 'vorDist', e.target.value)} className="w-12 p-1 border rounded text-xs bg-white dark:bg-gray-800 dark:border-gray-600 text-center" /></td>
 
-                                    <td className="px-2 py-1 text-center">
-                                        <button onClick={() => removeLeg(leg.id)} className="text-red-500 hover:text-red-700 transition-colors p-1">
+                                    <td className="px-2 py-1 text-center whitespace-nowrap">
+                                        <button onClick={() => insertLeg(index + 1)} title={t('navPlanner.insertLeg')} className="text-green-500 hover:text-green-700 transition-colors p-1">
+                                            <PlusCircle className="h-4 w-4" />
+                                        </button>
+                                        <button onClick={() => removeLeg(leg.id)} title={t('navPlanner.removeLeg')} className="text-red-500 hover:text-red-700 transition-colors p-1">
                                             <Trash2 className="h-4 w-4" />
                                         </button>
                                     </td>
@@ -367,6 +576,141 @@ export default function NavigationPlanner() {
                             <span className="font-mono text-blue-600 dark:text-blue-400 font-bold">{reqFuel60Min.toFixed(1)}</span>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {/* Flight Status (Moved to Bottom) */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-200 dark:border-gray-700 mt-8">
+                <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{t('navPlanner.flightStatus')}</h3>
+                </div>
+                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    <div className="grid grid-cols-3 items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 col-span-1">{t('navPlanner.pilotName')}</label>
+                        <input type="text" value={details.pilotName} onChange={e => handleDetailChange('pilotName', e.target.value)} className="col-span-2 p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm text-center" />
+                    </div>
+                    <div className="grid grid-cols-3 items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 col-span-1">{t('navPlanner.pilotLicense')}</label>
+                        <input type="text" value={details.pilotLicense} onChange={e => handleDetailChange('pilotLicense', e.target.value)} className="col-span-2 p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm text-center" />
+                    </div>
+                    <div className="grid grid-cols-3 items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 col-span-1">{t('navPlanner.pilotPhone')}</label>
+                        <input type="text" value={details.pilotPhone} onChange={e => handleDetailChange('pilotPhone', e.target.value)} className="col-span-2 p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm text-center" />
+                    </div>
+                    <div className="grid grid-cols-3 items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 col-span-1">{t('navPlanner.pilotEmail')}</label>
+                        <input type="email" value={details.pilotEmail} onChange={e => handleDetailChange('pilotEmail', e.target.value)} className="col-span-2 p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm text-center" />
+                    </div>
+
+                    <div className="grid grid-cols-3 items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 col-span-1">{t('navPlanner.departureDest')}</label>
+                        <div className="col-span-2 flex gap-2">
+                            <input type="text" value={details.origin} readOnly className="flex-1 p-1.5 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-900 text-sm text-center text-gray-500" placeholder={t('navPlanner.origin')} />
+                            <input type="text" value={details.finalDest} readOnly className="flex-1 p-1.5 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-900 text-sm text-center text-gray-500" placeholder={t('navPlanner.finalDest')} />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-3 items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 col-span-1">{t('navPlanner.paxCount')}</label>
+                        <input type="text" value={details.paxCount} onChange={e => handleDetailChange('paxCount', e.target.value)} className="col-span-2 p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm text-center" />
+                    </div>
+                    <div className="grid grid-cols-3 items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 col-span-1">{t('navPlanner.flightEndurance')}</label>
+                        <input type="text" value={details.flightEndurance} onChange={e => handleDetailChange('flightEndurance', e.target.value)} className="col-span-2 p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm text-center" />
+                    </div>
+                    <div className="grid grid-cols-3 items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 col-span-1">{t('navPlanner.aircraftType')}</label>
+                        <input type="text" value="Cessna 172" readOnly className="col-span-2 p-1.5 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-900 text-sm text-center text-gray-500" />
+                    </div>
+                    <div className="grid grid-cols-3 items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 col-span-1">{t('navPlanner.flightRules')}</label>
+                        <select value={details.flightRules} onChange={e => handleDetailChange('flightRules', e.target.value)} className="col-span-2 p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm text-center font-bold">
+                            <option value="V">VFR</option>
+                            <option value="I">IFR</option>
+                        </select>
+                    </div>
+                    <div className="grid grid-cols-3 items-center gap-2 md:col-start-1">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 col-span-1">{t('navPlanner.callsign')}</label>
+                        <select value={details.callsign} onChange={e => handleDetailChange('callsign', e.target.value)} className="col-span-2 p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm text-center font-bold">
+                            {callsignOptions.map(opt => <option key={`callsign-${opt}`} value={opt}>{opt || '---'}</option>)}
+                        </select>
+                    </div>
+                </div>
+
+                {/* ICAO Generation Button */}
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                    <button
+                        onClick={generateICAO}
+                        disabled={isGenerating}
+                        className={`w-full md:w-auto px-6 py-2 font-medium rounded-md shadow-sm transition-all duration-200 flex items-center justify-center gap-2 ${isGenerating
+                            ? 'bg-green-600 hover:bg-green-700 text-white transform scale-95'
+                            : 'bg-aviation-blue hover:bg-blue-800 text-white'
+                            }`}
+                    >
+                        {isGenerating && (
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        )}
+                        {isGenerating ? t('navPlanner.icaoGenerated') : t('navPlanner.generateICAO')}
+                    </button>
+
+                    {icaoError && (
+                        <div className="mt-3 text-sm text-red-600 dark:text-red-400 font-medium bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-200 dark:border-red-800">
+                            {icaoError}
+                        </div>
+                    )}
+
+                    {icaoPlan && (
+                        <div className="mt-4">
+                            <h4 className="text-sm font-semibold text-green-600 dark:text-green-400 mb-2">{t('navPlanner.icaoGenerated')}</h4>
+                            <textarea
+                                readOnly
+                                value={icaoPlan}
+                                rows={8}
+                                className="w-full p-3 font-mono text-xs bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-aviation-blue mb-3"
+                            />
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                <button
+                                    onClick={sendEmail}
+                                    disabled={isSendingEmail}
+                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md text-sm font-medium transition-colors flex items-center justify-center min-w-[160px]"
+                                >
+                                    {isSendingEmail ? (
+                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    ) : (
+                                        <Send className="mr-2 h-4 w-4" />
+                                    )}
+                                    {isSendingEmail ? t('navPlanner.emailSending') : t('navPlanner.sendEmail')}
+                                </button>
+                                {emailStatus && (
+                                    <span className={`text-sm font-medium ${emailStatus.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                        {emailStatus.message}
+                                    </span>
+                                )}
+                            </div>
+
+                            {sentEmailsLogs.length > 0 && (
+                                <div className="mt-4 space-y-3">
+                                    {sentEmailsLogs.map((log, index) => (
+                                        <div key={index} className="p-4 bg-green-50 dark:bg-green-900/20 rounded-md border border-green-200 dark:border-green-800 animate-in fade-in slide-in-from-top-2 duration-300">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h5 className="font-semibold text-green-800 dark:text-green-300">{t('navPlanner.emailSentDetails')} #{index + 1}</h5>
+                                                <span className="text-xs text-green-600 dark:text-green-400 font-mono">{log.time}</span>
+                                            </div>
+                                            <ul className="text-sm text-green-700 dark:text-green-400 space-y-1.5 list-disc list-inside">
+                                                <li><strong>{t('navPlanner.emailTo')}</strong> <span className="dir-ltr inline-block" dir="ltr">{log.to}</span></li>
+                                                <li><strong>{t('navPlanner.emailSubject')}</strong> <span className="dir-ltr inline-block" dir="ltr">{log.subject}</span></li>
+                                            </ul>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 

@@ -584,12 +584,12 @@ export default function WBCalculator() {
                 <div>
                   <h4 className="font-semibold text-gray-900 dark:text-white mb-2">{t('wb.cgFormula')}</h4>
                   <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 font-mono text-sm shadow-sm relative transition-colors">
-                    <p className="text-gray-500 dark:text-gray-400 mb-1 italic flex items-center gap-1">
+                    <div className="text-gray-500 dark:text-gray-400 mb-1 italic flex items-center gap-1">
                       {t('wb.cgFormulaDesc')}
                       <Tooltip text={t('wb.cgFormulaTooltip')}>
                         <HelpCircle className="h-3 w-3 text-gray-300 dark:text-gray-600 cursor-help" />
                       </Tooltip>
-                    </p>
+                    </div>
                     <p className="text-aviation-blue dark:text-blue-400 font-bold text-lg mb-6">
                       {results.cg.toFixed(2)} = {results.totalMoment.toFixed(0)} / {results.totalWeight.toFixed(1)}
                     </p>

@@ -16,6 +16,7 @@ export interface FlightLeg {
 
 export interface FlightDetails {
     takeoffTime: string; // HH:mm format
+    flightDate: string; // YYYY-MM-DD format
     cruiseGS: number | '';
     cruiseGPH: number | '';
     taxiFuel: number | '';
@@ -25,10 +26,13 @@ export interface FlightDetails {
     finalDest: string;
     altName: string;
     altFreq: string;
-    registration: string;
+    pilotName: string;
+    pilotLicense: string;
+    pilotPhone: string;
+    pilotEmail: string;
     paxCount: string;
-    departureDest: string;
     flightEndurance: string;
     aircraftType: string;
     callsign: string;
+    flightRules: 'V' | 'I';
 }
