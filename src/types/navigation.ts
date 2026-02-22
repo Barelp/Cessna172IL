@@ -12,6 +12,9 @@ export interface FlightLeg {
     vorName: string;
     vorRadial: string;
     vorDist: string;
+    windSpeed: string;
+    windDir: string;
+    temperature: number | '';
 }
 
 export interface FlightDetails {

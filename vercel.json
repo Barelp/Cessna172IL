@@ -1,0 +1,8 @@
+{
+    "rewrites": [
+        {
+            "source": "/(calculator|navigation|config|checklist)(/.*)?",
+            "destination": "/index.html"
+        }
+    ]
+}

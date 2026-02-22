@@ -85,7 +85,19 @@ export default function NavigationPlanner() {
     };
 
     const handleLegChange = (id: string, field: keyof FlightLeg, value: string | number) => {
-        setLegs(prev => prev.map(leg => leg.id === id ? { ...leg, [field]: value } : leg));
+        let parsedValue = value;
+        if (typeof value === 'string' && (field === 'heading' || field === 'windDir')) {
+            parsedValue = value.replace(/[^0-9]/g, '');
+            if (parsedValue !== '') {
+                const numericValue = parseInt(parsedValue, 10);
+                if (numericValue > 360) {
+                    parsedValue = '360';
+                } else if (parsedValue.length > 3) {
+                    parsedValue = parsedValue.slice(0, 3);
+                }
+            }
+        }
+        setLegs(prev => prev.map(leg => leg.id === id ? { ...leg, [field]: parsedValue } : leg));
     };
 
     const addLeg = () => {
@@ -103,7 +115,10 @@ export default function NavigationPlanner() {
             secondaryFreq: '',
             vorName: '',
             vorRadial: '',
-            vorDist: ''
+            vorDist: '',
+            temperature: 15, // Default ISA sea level temp
+            windDir: '',
+            windSpeed: ''
         };
         setLegs(prev => [...prev, newLeg]);
     };
@@ -123,7 +138,10 @@ export default function NavigationPlanner() {
             secondaryFreq: '',
             vorName: '',
             vorRadial: '',
-            vorDist: ''
+            vorDist: '',
+            temperature: 15, // Default ISA sea level temp
+            windDir: '',
+            windSpeed: ''
         };
         const newLegs = [...legs];
         newLegs.splice(index, 0, newLeg);
@@ -136,15 +154,62 @@ export default function NavigationPlanner() {
 
     // Calculations
     const parseNum = (val: string | number) => (val === '' || isNaN(Number(val)) ? 0 : Number(val));
-    const gs = parseNum(details.cruiseGS);
+    const cruiseIAS = parseNum(details.cruiseGS);
     const gph = parseNum(details.cruiseGPH);
     const taxiFuel = parseNum(details.taxiFuel);
 
     let cumulativeHours = 0;
 
+    const calculateTAS = (ias: number, altitude: number, tempC: number) => {
+        // Approximate TAS formula: TAS = IAS + (2% per 1000 ft of altitude)
+        // A more accurate common formula involving temperature is: TAS = IAS * sqrt( density_sea_level / density_alt )
+        // Using a simpler common aviation rule of thumb: +2% per 1000ft, plus ~1% for every 5C above standard temperature.
+        // Or the standard: TAS = IAS * (1 + (Altitude / 1000) * 0.02)
+        // Let's use standard rule of thumb for standard temp, but adjust by temperature roughly.
+        // Actually, the simplest accurate enough formula: TAS = IAS * (1 + 0.02 * (Altitude / 1000))
+        // We'll ignore temp for the basic rule if altitude is only thing provided, but since temp is provided,
+        // Standard temp at altitude = 15 - 2 * (Alt/1000).
+        // Dev. from Standard = Actual Temp - Standard Temp.
+        // Rule of thumb: add 1% to TAS for every 5 degrees C above standard, subtract 1% for 5 degrees below.
+
+        let alt = altitude || 0;
+        let stdTemp = 15 - 2 * (alt / 1000);
+        let tempISA = tempC - stdTemp;
+        let tasBase = ias * (1 + 0.02 * (alt / 1000));
+        let tasFinal = tasBase + tasBase * (tempISA / 5) * 0.01;
+
+        return tasFinal;
+    };
+
+    const calculateWindEffects = (courseDeg: number, windDirDeg: number, windSpeed: number, tas: number) => {
+        if (!tas || isNaN(courseDeg) || isNaN(windDirDeg) || isNaN(windSpeed)) return { wca: 0, gs: tas || 0 };
+        const windAngleRad = (windDirDeg - courseDeg) * (Math.PI / 180);
+        let wcaRad = Math.asin((windSpeed * Math.sin(windAngleRad)) / tas);
+        if (isNaN(wcaRad)) wcaRad = 0;
+        const wcaDeg = wcaRad * (180 / Math.PI);
+        const gs = tas * Math.cos(wcaRad) - windSpeed * Math.cos(windAngleRad);
+        return { wca: wcaDeg, gs: Math.max(0, gs) };
+    }
+
     const calculatedLegs = legs.map(leg => {
         const dist = parseNum(leg.distNM);
-        const flightTimeHours = gs > 0 ? dist / gs : 0;
+        const course = parseNum(leg.heading);
+        const windDir = leg.windDir !== '' ? parseNum(leg.windDir) : NaN;
+        const windSpeed = leg.windSpeed !== '' ? parseNum(leg.windSpeed) : NaN;
+        const alt = parseNum(leg.altitude);
+        const temp = parseNum(leg.temperature);
+
+        let currentTAS = cruiseIAS > 0 ? Math.round(calculateTAS(cruiseIAS, alt, temp !== 0 ? temp : 15)) : 0;
+        let legGS = currentTAS;
+        let legWCA = 0;
+
+        if (!isNaN(windDir) && !isNaN(windSpeed) && !isNaN(course) && currentTAS > 0) {
+            const effects = calculateWindEffects(course, windDir, windSpeed, currentTAS);
+            legGS = effects.gs;
+            legWCA = effects.wca;
+        }
+
+        const flightTimeHours = legGS > 0 ? dist / legGS : 0;
         const fuelUsed = flightTimeHours * gph;
 
         cumulativeHours += flightTimeHours;
@@ -155,13 +220,17 @@ export default function NavigationPlanner() {
             flightTimeHours,
             flightTimeStr: formatDuration(flightTimeHours),
             fuelUsed,
-            timeOverPoint
+            timeOverPoint,
+            calculatedTAS: currentTAS,
+            calculatedGS: legGS,
+            calculatedWCA: legWCA
         };
     });
 
-    const totalDist = legs.reduce((acc, leg) => acc + parseNum(leg.distNM), 0);
-    const totalTimeHours = gs > 0 ? totalDist / gs : 0;
-    const totalFuelUsed = totalTimeHours * gph;
+
+    const totalDist = calculatedLegs.reduce((acc, leg) => acc + parseNum(leg.distNM), 0);
+    const totalTimeHours = calculatedLegs.reduce((acc, leg) => acc + leg.flightTimeHours, 0);
+    const totalFuelUsed = calculatedLegs.reduce((acc, leg) => acc + leg.fuelUsed, 0);
 
     const reqFuelNoReserve = totalFuelUsed + taxiFuel;
     const reserve45 = 0.75 * gph;
@@ -224,8 +293,10 @@ export default function NavigationPlanner() {
             dof = `${yy}${dateParts[1]}${dateParts[2]}`;
         }
 
+        // For ICAO string, use the TAS of the first leg, or IAS if no legs
+        const initialTAS = calculatedLegs.length > 0 ? calculatedLegs[0].calculatedTAS : cruiseIAS;
         // Format speed (N + 4 digits: e.g. 90 -> N0090)
-        const speed = `N${String(Math.round(gs)).padStart(4, '0')}`;
+        const speed = `N${String(Math.round(initialTAS)).padStart(4, '0')}`;
 
         // Format time (HHMM)
         const time = details.takeoffTime.replace(':', '');
@@ -456,7 +527,13 @@ export default function NavigationPlanner() {
                                 <th className="px-3 py-2">{t('navPlanner.legsTable.timeOverPoint')}</th>
                                 <th className="px-3 py-2">{t('navPlanner.legsTable.fuelGal')}</th>
                                 <th className="px-3 py-2">{t('navPlanner.legsTable.heading')}</th>
+                                <th className="px-3 py-2">{t('navPlanner.legsTable.windDir')}</th>
+                                <th className="px-3 py-2">{t('navPlanner.legsTable.windSpeed')}</th>
                                 <th className="px-3 py-2">{t('navPlanner.legsTable.altitude')}</th>
+                                <th className="px-3 py-2 text-center">{t('navPlanner.legsTable.temperature')}</th>
+                                <th className="px-3 py-2 text-center">{t('navPlanner.legsTable.tas')}</th>
+                                <th className="px-3 py-2 text-center">{t('navPlanner.legsTable.wca')}</th>
+                                <th className="px-3 py-2 text-center">{t('navPlanner.legsTable.gs')}</th>
                                 <th className="px-3 py-2">{t('navPlanner.legsTable.trend')}</th>
                                 <th className="px-3 py-2">{t('navPlanner.legsTable.control')}</th>
                                 <th className="px-3 py-2">{t('navPlanner.legsTable.primaryFreq')}</th>
@@ -477,8 +554,22 @@ export default function NavigationPlanner() {
                                     <td className="px-2 py-1 font-mono text-center text-gray-600 dark:text-gray-400">{leg.timeOverPoint}</td>
                                     <td className="px-2 py-1 text-center font-medium text-aviation-blue dark:text-blue-400">{leg.fuelUsed.toFixed(1)}</td>
 
-                                    <td className="px-2 py-1"><input type="text" value={leg.heading} onChange={e => handleLegChange(leg.id, 'heading', e.target.value)} className="w-12 p-1 border rounded text-xs bg-white dark:bg-gray-800 dark:border-gray-600 text-center" /></td>
+                                    <td className="px-2 py-1"><input type="text" placeholder="°" value={leg.heading} onChange={e => handleLegChange(leg.id, 'heading', e.target.value)} className="w-12 p-1 border rounded text-xs bg-white dark:bg-gray-800 dark:border-gray-600 text-center" /></td>
+                                    <td className="px-2 py-1"><input type="text" placeholder="°" value={leg.windDir} onChange={e => handleLegChange(leg.id, 'windDir', e.target.value)} className="w-12 p-1 border rounded text-xs bg-white dark:bg-gray-800 dark:border-gray-600 text-center" /></td>
+                                    <td className="px-2 py-1"><input type="number" placeholder="KT" value={leg.windSpeed} onChange={e => handleLegChange(leg.id, 'windSpeed', e.target.value)} className="w-12 p-1 border rounded text-xs bg-white dark:bg-gray-800 dark:border-gray-600 text-center" /></td>
                                     <td className="px-2 py-1"><input type="text" value={leg.altitude} onChange={e => handleLegChange(leg.id, 'altitude', e.target.value)} className="w-12 p-1 border rounded text-xs bg-white dark:bg-gray-800 dark:border-gray-600 text-center" /></td>
+                                    <td className="px-2 py-1"><input type="number" placeholder="°C" value={leg.temperature} onChange={e => handleLegChange(leg.id, 'temperature', e.target.value)} className="w-12 p-1 border rounded text-xs bg-white dark:bg-gray-800 dark:border-gray-600 text-center" /></td>
+
+                                    <td className="px-2 py-1 text-center font-mono text-xs text-gray-600 dark:text-gray-400 font-bold">
+                                        {leg.calculatedTAS > 0 ? Math.round(leg.calculatedTAS) : '-'}
+                                    </td>
+                                    <td className="px-2 py-1 text-center font-mono text-xs text-gray-600 dark:text-gray-400">
+                                        {leg.calculatedWCA !== 0 ? (leg.calculatedWCA > 0 ? `+${leg.calculatedWCA.toFixed(0)}°` : `${leg.calculatedWCA.toFixed(0)}°`) : '-'}
+                                    </td>
+                                    <td className="px-2 py-1 text-center font-mono text-xs text-gray-600 dark:text-gray-400 font-bold">
+                                        {Math.round(leg.calculatedGS)}
+                                    </td>
+
                                     <td className="px-2 py-1">
                                         <select value={leg.trend} onChange={e => handleLegChange(leg.id, 'trend', e.target.value)} className="w-20 p-1 border rounded text-xs bg-white dark:bg-gray-800 dark:border-gray-600">
                                             <option value="">-</option>
