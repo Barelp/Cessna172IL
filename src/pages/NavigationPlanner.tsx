@@ -39,7 +39,16 @@ export default function NavigationPlanner() {
     const [details, setDetails] = useState<FlightDetails>(initialDetails);
     const [legs, setLegs] = useState<FlightLeg[]>([]);
 
-    const airportOptions = ['', 'LLHZ', 'LLHA', 'LLMG', 'LLIB'];
+    const airportOptions = [
+        { code: '', label: '---' },
+        ...waypoints
+            .filter(wp => wp.code.startsWith('LL') && wp.code.length === 4)
+            .sort((a, b) => a.name.localeCompare(b.name, 'he'))
+            .map(wp => ({
+                code: wp.code,
+                label: `${wp.code} - ${wp.name}`
+            }))
+    ];
     const callsignOptions = ['', ...getAllPresets().map(p => p.tailNumber)];
     const [icaoPlan, setIcaoPlan] = useState<string | null>(null);
     const [icaoError, setIcaoError] = useState<string | null>(null);
@@ -89,7 +98,28 @@ export default function NavigationPlanner() {
                 }
             }
         }
-        setLegs(prev => prev.map(leg => leg.id === id ? { ...leg, [field]: parsedValue } : leg));
+        setLegs(prev => prev.map(leg => {
+            if (leg.id !== id) return leg;
+            const updatedLeg = { ...leg, [field]: parsedValue };
+
+            if (field === 'from' || field === 'to') {
+                const getWaypoint = (codeOrName: string) => {
+                    if (!codeOrName || typeof codeOrName !== 'string') return null;
+                    const code = codeOrName.split('-')[0].trim().toUpperCase();
+                    return waypoints.find(wp => wp.code.toUpperCase() === code);
+                };
+                const wpFrom = getWaypoint(updatedLeg.from);
+                const wpTo = getWaypoint(updatedLeg.to);
+                if (wpFrom && wpTo && wpFrom.lat && wpFrom.lon && wpTo.lat && wpTo.lon) {
+                    const midLat = (wpFrom.lat + wpTo.lat) / 2;
+                    const dx = (wpTo.lon - wpFrom.lon) * 60 * Math.cos(midLat * Math.PI / 180);
+                    const dy = (wpTo.lat - wpFrom.lat) * 60;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    updatedLeg.distNM = parseFloat(dist.toFixed(1));
+                }
+            }
+            return updatedLeg;
+        }));
     };
 
     const addLeg = () => {
@@ -262,10 +292,13 @@ export default function NavigationPlanner() {
         }
 
         // Validate waypoints (ignore empty, origin, destination, and known airports)
+        const originCode = details.origin.split('-')[0].trim().toUpperCase();
+        const destCode = details.finalDest.split('-')[0].trim().toUpperCase();
+
         const hasInvalidWaypoint = legs.some(l => {
             if (!l.to) return false;
             const code = l.to.split('-')[0].trim().split(' ')[0].trim().toUpperCase();
-            const isAirport = airportOptions.includes(code) || code === details.origin.toUpperCase() || code === details.finalDest.toUpperCase();
+            const isAirport = airportOptions.some(a => a.code === code) || code === originCode || code === destCode;
             if (isAirport) return false;
             return !waypoints.some(wp => wp.code.toUpperCase() === code);
         });
@@ -318,16 +351,16 @@ export default function NavigationPlanner() {
         });
 
         const routePoints = allPoints.filter(point => {
-            return point && point !== details.origin && point !== details.finalDest;
+            return point && point !== originCode && point !== destCode;
         });
         const routeStr = routePoints.length > 0 ? routePoints.join(' ') : 'DCT';
 
         const ruleString = details.flightRules === 'I' ? 'IFR' : 'VFR';
         const plan = `(FPL-${details.callsign}-${details.flightRules}G
 -C172/L-S/C
--${details.origin}${time}
+-${originCode}${time}
 -${speed}${ruleString} ${routeStr}
--${details.finalDest}${eet}
+-${destCode}${eet}
 -DOF/${dof} RMK/PIC ${details.pilotName.trim()} LICENSE ${details.pilotLicense} CELL ${details.pilotPhone}
 -E/${enduranceStr} P/${details.paxCount.padStart(3, '0')})`.toUpperCase();
 
@@ -459,27 +492,19 @@ export default function NavigationPlanner() {
                         <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 mb-1">{t('navPlanner.origin')}</label>
-                                <select value={details.origin} onChange={e => handleDetailChange('origin', e.target.value)} className="w-full p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm">
-                                    {airportOptions.map(opt => <option key={`origin-${opt}`} value={opt}>{opt || '---'}</option>)}
-                                </select>
+                                <input type="text" list="airports-list" value={details.origin} onChange={e => handleDetailChange('origin', e.target.value)} className="w-full p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm" placeholder="---" />
                             </div>
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 mb-1">{t('navPlanner.landing1')}</label>
-                                <select value={details.landing1} onChange={e => handleDetailChange('landing1', e.target.value)} className="w-full p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm">
-                                    {airportOptions.map(opt => <option key={`landing1-${opt}`} value={opt}>{opt || '---'}</option>)}
-                                </select>
+                                <input type="text" list="airports-list" value={details.landing1} onChange={e => handleDetailChange('landing1', e.target.value)} className="w-full p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm" placeholder="---" />
                             </div>
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 mb-1">{t('navPlanner.landing2')}</label>
-                                <select value={details.landing2} onChange={e => handleDetailChange('landing2', e.target.value)} className="w-full p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm">
-                                    {airportOptions.map(opt => <option key={`landing2-${opt}`} value={opt}>{opt || '---'}</option>)}
-                                </select>
+                                <input type="text" list="airports-list" value={details.landing2} onChange={e => handleDetailChange('landing2', e.target.value)} className="w-full p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm" placeholder="---" />
                             </div>
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 mb-1">{t('navPlanner.finalDest')}</label>
-                                <select value={details.finalDest} onChange={e => handleDetailChange('finalDest', e.target.value)} className="w-full p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm">
-                                    {airportOptions.map(opt => <option key={`finalDest-${opt}`} value={opt}>{opt || '---'}</option>)}
-                                </select>
+                                <input type="text" list="airports-list" value={details.finalDest} onChange={e => handleDetailChange('finalDest', e.target.value)} className="w-full p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm" placeholder="---" />
                             </div>
                         </div>
 
@@ -775,6 +800,13 @@ export default function NavigationPlanner() {
                     )}
                 </div>
             </div>
+
+            {/* Datalist for Airports */}
+            <datalist id="airports-list">
+                {airportOptions.filter(opt => opt.code !== '').map(opt => (
+                    <option key={`dl-apt-${opt.code}`} value={opt.label} />
+                ))}
+            </datalist>
 
             {/* Datalist for Waypoints */}
             <datalist id="waypoints-list">
