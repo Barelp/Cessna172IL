@@ -9,5 +9,14 @@ export default defineConfig({
   plugins: [react(), viteSingleFile()],
   define: {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version)
+  },
+  server: {
+    proxy: {
+      '/api/notamdata': {
+        target: 'https://www.notammap.org/notamdata',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/notamdata/, '')
+      }
+    }
   }
 })

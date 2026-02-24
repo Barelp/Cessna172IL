@@ -113,9 +113,9 @@ export default function FlightMap({ legs, origin, finalDest }: FlightMapProps) {
     useEffect(() => {
         const fetchNotams = async () => {
             try {
-                // Use proxy to bypass CORS during development
-                const isDev = import.meta.env.DEV;
-                const url = isDev ? '/api/notamdata/Israel.json' : 'https://www.notammap.org/notamdata/Israel.json';
+                // Use proxy to bypass CORS.
+                // Works locally via Vite proxy and in Prod via vercel.json rewrite.
+                const url = '/api/notamdata/Israel.json';
                 const response = await fetch(url);
                 const data = await response.json();
                 if (data && data.notams) {
