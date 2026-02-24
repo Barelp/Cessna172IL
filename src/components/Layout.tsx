@@ -21,6 +21,11 @@ export default function Layout() {
                 </div>
 
                 <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-48 md:h-56 flex items-center justify-between">
+                    {/* Version Number in absolute bottom right */}
+                    <div className="absolute bottom-2 right-4 sm:right-6 lg:right-8 opacity-70 hover:opacity-100 transition-opacity">
+                        <BuildVersion className="text-xs text-white" />
+                    </div>
+
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-white/10 rounded-full backdrop-blur-sm border border-white/20">
                             <Plane className="h-8 w-8" />
@@ -28,7 +33,6 @@ export default function Layout() {
                         <div>
                             <h1 className="text-2xl font-bold tracking-tight text-white drop-shadow-md flex items-baseline gap-3">
                                 <span>{t('appTitle')}</span>
-                                <BuildVersion className="hidden sm:block mt-1" />
                             </h1>
                             <p className="text-xs text-blue-100 font-medium tracking-wide">{t('appSubtitle')}</p>
                         </div>
