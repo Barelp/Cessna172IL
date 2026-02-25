@@ -115,8 +115,7 @@ export default function FlightMap({ legs, origin, finalDest }: FlightMapProps) {
             try {
                 // Use proxy to bypass CORS.
                 // Works locally via Vite proxy and in Prod via vercel.json rewrite.
-                // Using window.location.origin prevents path resolution issues on mobile/embedded browsers.
-                const url = `${window.location.origin}/api/notamdata/Israel.json`;
+                const url = '/api/notamdata/Israel.json';
                 const response = await fetch(url);
                 const data = await response.json();
                 if (data && data.notams) {
