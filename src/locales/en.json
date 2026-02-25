@@ -130,7 +130,23 @@
         "title": "Navigation & Fuel Planner",
         "tabs": {
             "planner": "Flight Planner",
-            "map": "Navigation Map"
+            "map": "Navigation Map",
+            "weather": "Weather"
+        },
+        "weather": {
+            "title": "Aviation Weather Data (IMS)",
+            "refresh": "Refresh Data",
+            "lastUpdate": "Last Updated:",
+            "loading": "Loading data...",
+            "error": "Error loading weather data.",
+            "metar": "METAR Reports",
+            "taf": "TAF Forecasts",
+            "atis": "ATIS",
+            "warnings": "Area Warnings",
+            "noData": "No data available"
+        },
+        "notams": {
+            "lastUpdate": "Last Updated:"
         },
         "map": {
             "title": "Low Altitude Navigation Map",

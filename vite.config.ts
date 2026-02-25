@@ -16,6 +16,11 @@ export default defineConfig({
         target: 'https://www.notammap.org/notamdata',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/notamdata/, '')
+      },
+      '/api/weather': {
+        target: 'https://ims.gov.il/he/aviation_data',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/weather/, '')
       }
     }
   }

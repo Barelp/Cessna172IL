@@ -5,6 +5,7 @@ import type { FlightDetails, FlightLeg, Notam } from '../types/navigation';
 import { waypoints } from '../data/waypoints';
 import { getAllPresets } from '../data/presets';
 import FlightMap from '../components/FlightMap';
+import WeatherTab from '../components/WeatherTab';
 
 const getTodayDate = () => {
     const today = new Date();
@@ -67,9 +68,10 @@ export default function NavigationPlanner() {
     useEffect(() => {
         localStorage.setItem('navPlannerLegs', JSON.stringify(legs));
     }, [legs]);
-    const [activeTab, setActiveTab] = useState<'planner' | 'map' | 'notams'>('planner');
+    const [activeTab, setActiveTab] = useState<'planner' | 'map' | 'notams' | 'weather'>('planner');
     const [notamsSearch, setNotamsSearch] = useState('');
     const [fetchedNotams, setFetchedNotams] = useState<Notam[]>([]);
+    const [notamsLastUpdate, setNotamsLastUpdate] = useState<Date | null>(null);
     const [isLoadingNotams, setIsLoadingNotams] = useState(false);
 
     const fetchNotams = async () => {
@@ -82,6 +84,7 @@ export default function NavigationPlanner() {
             const data = await response.json();
             if (data && data.notams) {
                 setFetchedNotams(data.notams);
+                setNotamsLastUpdate(new Date());
             }
         } catch (error) {
             console.error("Failed to fetch NOTAMs for tab:", error);
@@ -535,6 +538,15 @@ export default function NavigationPlanner() {
                 >
                     {t('navPlanner.tabs.notams', 'NOTAMs')}
                 </button>
+                <button
+                    onClick={() => setActiveTab('weather')}
+                    className={`pb-2 px-2 border-b-2 font-medium text-sm transition-colors ${activeTab === 'weather'
+                        ? 'border-aviation-blue text-aviation-blue dark:border-blue-400 dark:text-blue-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                        }`}
+                >
+                    {t('navPlanner.tabs.weather')}
+                </button>
             </div>
 
             {activeTab === 'planner' && (
@@ -915,6 +927,10 @@ export default function NavigationPlanner() {
                 </div>
             )}
 
+            {activeTab === 'weather' && (
+                <WeatherTab />
+            )}
+
             {activeTab === 'notams' && (
                 <div className="animate-in fade-in duration-300 space-y-6">
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-200 dark:border-gray-700">
@@ -923,6 +939,11 @@ export default function NavigationPlanner() {
                                 <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                                     {t('navPlanner.notams.title', 'NOTAMs List')}
                                 </h3>
+                                {notamsLastUpdate && (
+                                    <span className="text-sm text-gray-500 dark:text-gray-400 font-mono hidden sm:inline-block">
+                                        {t('navPlanner.notams.lastUpdate', 'Last Updated:')} {notamsLastUpdate.toLocaleTimeString('he-IL')}
+                                    </span>
+                                )}
                                 <button
                                     onClick={fetchNotams}
                                     disabled={isLoadingNotams}
