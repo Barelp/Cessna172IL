@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MapContainer, ImageOverlay, Polyline, Marker, Tooltip, useMap, Popup } from 'react-leaflet';
-import { Eye, EyeOff, Navigation } from 'lucide-react';
+import { Navigation, Waypoints, AlertTriangle } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { FlightLeg, Notam } from '../types/navigation';
@@ -248,33 +248,30 @@ export default function FlightMap({ legs, origin, finalDest }: FlightMapProps) {
                 <div className="flex flex-wrap justify-center sm:justify-end gap-2 w-full sm:w-auto">
                     <button
                         onClick={toggleTracking}
-                        className={`flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${isTracking
+                        title={isTracking ? t('navPlanner.map.stopTracking') : t('navPlanner.map.trackLocation')}
+                        className={`flex items-center gap-1.5 text-sm font-medium px-2 min-[450px]:px-3 py-1.5 rounded-md transition-colors ${isTracking
                             ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700'
                             : 'text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                             }`}
                     >
                         <Navigation className={`h-4 w-4 ${isTracking ? 'fill-blue-500 text-blue-500' : ''}`} />
-                        {isTracking ? t('navPlanner.map.stopTracking') : t('navPlanner.map.trackLocation')}
+                        <span className="hidden min-[450px]:inline">{isTracking ? t('navPlanner.map.stopTracking') : t('navPlanner.map.trackLocation')}</span>
                     </button>
                     <button
                         onClick={() => setShowRoute(!showRoute)}
-                        className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        title={showRoute ? t('navPlanner.map.hideRoute') : t('navPlanner.map.showRoute')}
+                        className="flex items-center gap-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-2 min-[450px]:px-3 py-1.5 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
-                        {showRoute ? (
-                            <><EyeOff className="h-4 w-4" /> {t('navPlanner.map.hideRoute')}</>
-                        ) : (
-                            <><Eye className="h-4 w-4" /> {t('navPlanner.map.showRoute')}</>
-                        )}
+                        <Waypoints className={`h-4 w-4 transition-opacity ${showRoute ? 'opacity-100 text-blue-600 dark:text-blue-400' : 'opacity-40'}`} />
+                        <span className="hidden min-[450px]:inline">{showRoute ? t('navPlanner.map.hideRoute') : t('navPlanner.map.showRoute')}</span>
                     </button>
                     <button
                         onClick={() => setShowNotams(!showNotams)}
-                        className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        title={showNotams ? t('navPlanner.map.hideNotams', 'Hide NOTAMs') : t('navPlanner.map.showNotams', 'Show NOTAMs')}
+                        className="flex items-center gap-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-2 min-[450px]:px-3 py-1.5 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
-                        {showNotams ? (
-                            <><EyeOff className="h-4 w-4" /> {t('navPlanner.map.hideNotams', 'Hide NOTAMs')}</>
-                        ) : (
-                            <><Eye className="h-4 w-4" /> {t('navPlanner.map.showNotams', 'Show NOTAMs')}</>
-                        )}
+                        <AlertTriangle className={`h-4 w-4 transition-opacity ${showNotams ? 'opacity-100 text-red-600 dark:text-red-400' : 'opacity-40'}`} />
+                        <span className="hidden min-[450px]:inline">{showNotams ? t('navPlanner.map.hideNotams', 'Hide NOTAMs') : t('navPlanner.map.showNotams', 'Show NOTAMs')}</span>
                     </button>
                 </div>
             </div>
