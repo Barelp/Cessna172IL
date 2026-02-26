@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Plane, Settings, Gauge, Sun, Moon, Map } from 'lucide-react';
+import { Settings, Gauge, Sun, Moon, Map } from 'lucide-react';
 import cessnaBanner from '../resources/cessna_wallpaper.jpg';
 import { useTheme } from '../context/ThemeContext';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -27,9 +27,7 @@ export default function Layout() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white/10 rounded-full backdrop-blur-sm border border-white/20">
-                            <Plane className="h-8 w-8" />
-                        </div>
+                        <img src="/cessna172IL.logo.png" alt="Cessna 172 IL Logo" className="h-20 w-20 sm:h-24 sm:w-24 object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] rounded-2xl" />
                         <div>
                             <h1 className="text-2xl font-bold tracking-tight text-white drop-shadow-md flex items-baseline gap-3">
                                 <span>{t('appTitle')}</span>
