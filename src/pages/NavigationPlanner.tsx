@@ -124,9 +124,6 @@ export default function NavigationPlanner() {
     const [icaoPlan, setIcaoPlan] = useState<string | null>(null);
     const [icaoError, setIcaoError] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [isSendingEmail, setIsSendingEmail] = useState(false);
-    const [emailStatus, setEmailStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
-    const [sentEmailsLogs, setSentEmailsLogs] = useState<Array<{ to: string, subject: string, time: string }>>([]);
 
     // Format hours to HH:mm:ss
     const formatDuration = (hours: number) => {
@@ -452,53 +449,6 @@ export default function NavigationPlanner() {
         setTimeout(() => setIsGenerating(false), 800);
     };
 
-    const sendEmail = async () => {
-        if (!icaoPlan) return;
-
-        if (sentEmailsLogs.length > 0) {
-            const confirmed = window.confirm(t('navPlanner.emailResendConfirm'));
-            if (!confirmed) return;
-        }
-
-        setIsSendingEmail(true);
-        setEmailStatus(null);
-        try {
-            const response = await fetch('/api/send-flight-plan', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    plan: icaoPlan,
-                    callsign: details.callsign,
-                    date: details.flightDate,
-                    takeoffTime: details.takeoffTime,
-                    pilotEmail: details.pilotEmail,
-                    pilotName: details.pilotName,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to send email');
-            }
-
-            setEmailStatus({ type: 'success', message: t('navPlanner.emailSent') });
-            if (data.details) {
-                setSentEmailsLogs(prev => [...prev, {
-                    ...data.details,
-                    time: new Date().toLocaleTimeString('he-IL')
-                }]);
-            }
-        } catch (error) {
-            console.error(error);
-            setEmailStatus({ type: 'error', message: t('navPlanner.emailError') });
-        } finally {
-            setIsSendingEmail(false);
-            setTimeout(() => setEmailStatus(null), 5000); // clear status after 5s
-        }
-    };
 
     return (
         <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 pb-24">
@@ -891,23 +841,6 @@ export default function NavigationPlanner() {
                                             <span>{t('navPlanner.emailUnavailable')}</span>
                                         </p>
                                     </div>
-
-                                    {sentEmailsLogs.length > 0 && (
-                                        <div className="mt-4 space-y-3">
-                                            {sentEmailsLogs.map((log, index) => (
-                                                <div key={index} className="p-4 bg-green-50 dark:bg-green-900/20 rounded-md border border-green-200 dark:border-green-800 animate-in fade-in slide-in-from-top-2 duration-300">
-                                                    <div className="flex justify-between items-center mb-2">
-                                                        <h5 className="font-semibold text-green-800 dark:text-green-300">{t('navPlanner.emailSentDetails')} #{index + 1}</h5>
-                                                        <span className="text-xs text-green-600 dark:text-green-400 font-mono">{log.time}</span>
-                                                    </div>
-                                                    <ul className="text-sm text-green-700 dark:text-green-400 space-y-1.5 list-disc list-inside">
-                                                        <li><strong>{t('navPlanner.emailTo')}</strong> <span className="dir-ltr inline-block" dir="ltr">{log.to}</span></li>
-                                                        <li><strong>{t('navPlanner.emailSubject')}</strong> <span className="dir-ltr inline-block" dir="ltr">{log.subject}</span></li>
-                                                    </ul>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
                             )}
                         </div>
