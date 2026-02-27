@@ -10,12 +10,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { plan, callsign, date, takeoffTime, pilotEmail, pilotName } = req.body;
 
         const apiKey = process.env.SENDGRID_API_KEY;
-        // User requested target email via env variable with fallback to barelp@gmail.com
-        const targetEmail = process.env.SEND_TO_EMAIL || process.env.VITE_SEND_TO_EMAIL || 'barelp@gmail.com';
-        const fromEmail = process.env.SENDGRID_FROM_EMAIL || targetEmail;
+        const targetEmail = process.env.SEND_TO_EMAIL || process.env.VITE_SEND_TO_EMAIL;
+        const fromEmail = process.env.SENDGRID_FROM_EMAIL;
 
         if (!apiKey) {
             return res.status(500).json({ message: 'Server Configuration Error: SENDGRID_API_KEY is not defined' });
+        }
+        if (!targetEmail) {
+            return res.status(500).json({ message: 'Server Configuration Error: SEND_TO_EMAIL is not defined' });
+        }
+        if (!fromEmail) {
+            return res.status(500).json({ message: 'Server Configuration Error: SENDGRID_FROM_EMAIL is not defined' });
         }
 
         // Initialize SendGrid SDK
