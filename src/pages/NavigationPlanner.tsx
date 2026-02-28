@@ -71,7 +71,7 @@ export default function NavigationPlanner() {
     const [activeTab, setActiveTab] = useState<'planner' | 'map' | 'notams' | 'weather'>('planner');
     const [notamsSearch, setNotamsSearch] = useState('');
     const [fetchedNotams, setFetchedNotams] = useState<Notam[]>([]);
-    const [notamsLastUpdate, setNotamsLastUpdate] = useState<Date | null>(null);
+    const [notamsFileDate, setNotamsFileDate] = useState<string | null>(null);
     const [isLoadingNotams, setIsLoadingNotams] = useState(false);
 
     const fetchNotams = async () => {
@@ -84,7 +84,7 @@ export default function NavigationPlanner() {
             const data = await response.json();
             if (data && data.notams) {
                 setFetchedNotams(data.notams);
-                setNotamsLastUpdate(new Date());
+                if (data.date) setNotamsFileDate(data.date);
             }
         } catch (error) {
             console.error("Failed to fetch NOTAMs for tab:", error);
@@ -868,13 +868,13 @@ export default function NavigationPlanner() {
                         <div className="bg-aviation-blue px-4 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <div className="flex items-center gap-3 w-full sm:w-auto">
                                 <AlertTriangle className="h-6 w-6 text-white" />
-                                <h3 className="text-xl font-bold text-white">{t('navPlanner.notams.title', 'NOTAMs List')}</h3>
+                                <h3 className="text-xl font-bold text-white">{t('navPlanner.notams.title', 'NOTAMs List')} <span className="text-sm font-normal opacity-75">(notammap.org)</span></h3>
                             </div>
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
                                 <div className="flex items-center gap-4 text-white">
-                                    {notamsLastUpdate && (
+                                    {notamsFileDate && (
                                         <span className="text-sm opacity-90 font-mono hidden sm:inline-block">
-                                            {t('navPlanner.notams.lastUpdate', 'Last Updated:')} {notamsLastUpdate.toLocaleTimeString('he-IL')}
+                                            {t('navPlanner.notams.lastUpdate', 'Last Updated:')} {new Date(notamsFileDate).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' })}
                                         </span>
                                     )}
                                     <button
