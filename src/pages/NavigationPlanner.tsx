@@ -108,6 +108,10 @@ export default function NavigationPlanner() {
             (notam.raw && notam.raw.toLowerCase().includes(search)) ||
             (notam.notamText && notam.notamText.toLowerCase().includes(search))
         );
+    }).sort((a, b) => {
+        // Sort by year descending, then by number descending (newest first)
+        if (b.notam.year !== a.notam.year) return b.notam.year - a.notam.year;
+        return b.notam.number - a.notam.number;
     });
 
     const airportOptions = [
@@ -910,11 +914,15 @@ export default function NavigationPlanner() {
                                             <div key={n.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900/50 hover:bg-white dark:hover:bg-gray-800 transition-colors">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <span className="font-bold text-red-600 text-lg">NOTAM: {notam.series}{notam.number}/{notam.year}</span>
-                                                    {notam.latitude && notam.longitude && (
-                                                        <span className="text-xs text-gray-500 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">
-                                                            {notam.latitude.toFixed(4)}, {notam.longitude.toFixed(4)}
-                                                        </span>
-                                                    )}
+                                                    {(() => {
+                                                        const raw = notam.raw || notam.notamText || '';
+                                                        const match = raw.match(/CREATED:\s*(\d{2}\s+\w{3}\s+\d{4}\s+\d{2}:\d{2})/i);
+                                                        return match ? (
+                                                            <span className="text-xs text-gray-500 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded whitespace-nowrap">
+                                                                {match[1]}
+                                                            </span>
+                                                        ) : null;
+                                                    })()}
                                                 </div>
                                                 <pre className="text-sm whitespace-pre-wrap font-mono m-0 text-gray-800 dark:text-gray-300">
                                                     {notam.raw || notam.notamText}
