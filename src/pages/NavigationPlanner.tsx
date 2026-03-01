@@ -866,13 +866,33 @@ export default function NavigationPlanner() {
                 <div className="animate-in fade-in duration-300 space-y-6">
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-200 dark:border-gray-700">
                         <div className="bg-aviation-blue px-4 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                            <div className="flex items-center gap-3 w-full sm:w-auto">
-                                <AlertTriangle className="h-6 w-6 text-white" />
-                                <h3 className="text-xl font-bold text-white">{t('navPlanner.notams.title', 'NOTAMs List')} <span className="text-sm font-normal opacity-75">(notammap.org)</span></h3>
+                            {/* Title & Mobile Refresh */}
+                            <div className="flex items-center justify-between w-full sm:w-auto gap-2">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <AlertTriangle className="h-6 w-6 text-white shrink-0" />
+                                    <h3 className="text-xl font-bold text-white truncate">
+                                        {t('navPlanner.notams.title', 'NOTAMs List')} <span className="text-sm font-normal opacity-75 hidden xs:inline">(notammap.org)</span>
+                                    </h3>
+                                </div>
+                                <button
+                                    onClick={fetchNotams}
+                                    disabled={isLoadingNotams}
+                                    className={`sm:hidden shrink-0 flex items-center gap-1.5 p-1.5 bg-white/10 text-white hover:text-blue-200 border border-white/20 rounded-lg hover:bg-white/20 transition ${isLoadingNotams ? "opacity-50" : ""}`}
+                                    title={t('navPlanner.notams.refresh', 'Refresh NOTAMs')}
+                                >
+                                    <RefreshCw className={`h-4 w-4 ${isLoadingNotams ? 'animate-spin' : ''}`} strokeWidth={2} />
+                                    {notamsFileDate && (
+                                        <span className="text-xs font-medium pr-1 whitespace-nowrap">
+                                            {new Date(notamsFileDate).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    )}
+                                </button>
                             </div>
-                            <div className="flex items-center gap-4 text-white w-full sm:w-auto sm:justify-end">
+
+                            {/* Desktop update time & refresh */}
+                            <div className="hidden sm:flex items-center gap-4 text-white justify-end">
                                 {notamsFileDate && (
-                                    <span className="text-sm opacity-90 font-mono hidden sm:inline-block">
+                                    <span className="text-sm opacity-90 font-mono">
                                         {t('navPlanner.notams.lastUpdate', 'Last Updated:')} {new Date(notamsFileDate).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' })}
                                     </span>
                                 )}

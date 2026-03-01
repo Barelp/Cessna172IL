@@ -360,19 +360,21 @@ export default function WeatherTab() {
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="bg-aviation-blue px-4 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-4">
                     {/* Title & Mobile Refresh */}
-                    <div className="flex items-center justify-between w-full sm:w-auto">
-                        <div className="flex items-center gap-3">
-                            <CloudRain className="h-6 w-6 text-white" />
-                            <h3 className="text-xl font-bold text-white">{t('navPlanner.weather.title')}</h3>
+                    <div className="flex items-center justify-between w-full sm:w-auto gap-2">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <CloudRain className="h-6 w-6 text-white shrink-0" />
+                            <h3 className="text-xl font-bold text-white truncate">{t('navPlanner.weather.title')}</h3>
                         </div>
                         <button
                             onClick={fetchWeather}
                             disabled={isLoading}
-                            className={`sm:hidden flex items-center gap-1.5 p-1.5 bg-white/10 text-white hover:text-blue-200 border border-white/20 rounded-lg hover:bg-white/20 transition ${isLoading ? "opacity-50" : ""}`}
+                            className={`sm:hidden shrink-0 flex items-center gap-1.5 p-1.5 bg-white/10 text-white hover:text-blue-200 border border-white/20 rounded-lg hover:bg-white/20 transition ${isLoading ? "opacity-50" : ""}`}
                             title={t('navPlanner.weather.refresh')}
                         >
                             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} strokeWidth={2} />
-                            <span className="text-xs font-medium pr-1">{lastUpdate ? lastUpdate.toLocaleTimeString('he-IL').substring(0, 5) : ''}</span>
+                            <span className="text-xs font-medium pr-1 whitespace-nowrap">
+                                {lastUpdate ? lastUpdate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : ''}
+                            </span>
                         </button>
                     </div>
 

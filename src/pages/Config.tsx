@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Save, RotateCcw, Plane, PlusCircle, X, Trash2 } from 'lucide-react';
+import { Settings, Save, RotateCcw, Plane, PlusCircle, X, Trash2, CheckCircle2 } from 'lucide-react';
 import type { Aircraft } from '../types';
 import { DEFAULT_AIRCRAFT } from '../data/c172s';
 import {
@@ -58,6 +58,25 @@ export default function Config() {
     const [saved, setSaved] = useState(false);
     const [isNewMode, setIsNewMode] = useState(false);
     const [customList, setCustomList] = useState<Aircraft[]>(() => getCustomAircraftList());
+    const [hasAttemptedSave, setHasAttemptedSave] = useState(false);
+
+    // Validation — evaluated here so handleSave can check it
+    const newModeErrors: string[] = isNewMode ? [
+        ...(!aircraft.tailNumber.trim() ? [t('config.tailNumber')] : []),
+        ...(aircraft.maxTakeoffWeight <= 0 ? [t('config.maxTakeoffWeight')] : []),
+        ...(aircraft.basicEmptyWeight <= 0 ? [t('config.basicEmptyWeight')] : []),
+        ...(aircraft.emptyWeightArm <= 0 ? [t('config.emptyWeightArm')] : []),
+        ...(aircraft.fuelCapacity <= 0 ? [t('config.usableFuel')] : []),
+        ...(aircraft.usableFuelPerGal <= 0 ? [t('config.fuelWeight')] : []),
+        ...(aircraft.stationArms.pilot_front_pax <= 0 ? [t('config.frontSeats')] : []),
+        ...(aircraft.stationArms.rear_pax <= 0 ? [t('config.rearSeats')] : []),
+        ...(aircraft.stationArms.baggage_1 <= 0 ? [t('config.baggage1')] : []),
+        ...(aircraft.stationArms.baggage_2 <= 0 ? [t('config.baggage2')] : []),
+        ...(aircraft.stationArms.fuel <= 0 ? [t('config.fuel')] : []),
+        ...(aircraft.maxBaggage1Weight <= 0 ? [t('config.baggage1Max')] : []),
+        ...(aircraft.maxTotalBaggageWeight <= 0 ? [t('config.totalBaggageMax')] : []),
+    ] : [];
+    const hasNewModeErrors = newModeErrors.length > 0;
 
     const handleChange = <K extends keyof Aircraft>(field: K, value: Aircraft[K]) => {
         setAircraft(prev => ({ ...prev, [field]: value }));
@@ -65,6 +84,11 @@ export default function Config() {
     };
 
     const handleSave = () => {
+        if (isNewMode && hasNewModeErrors) {
+            setHasAttemptedSave(true);
+            return;
+        }
+
         const mtw = aircraft.maxTakeoffWeight;
 
         // For custom aircraft: derive CG limits and envelope from maxTakeoffWeight.
@@ -113,6 +137,7 @@ export default function Config() {
         }
         setSaved(true);
         setIsNewMode(false);
+        setHasAttemptedSave(false);
         setTimeout(() => setSaved(false), 3000);
     };
 
@@ -123,6 +148,7 @@ export default function Config() {
         setCustomList([]);
         setSaved(false);
         setIsNewMode(false);
+        setHasAttemptedSave(false);
     };
 
     const handleLoadPreset = (presetId: string) => {
@@ -131,6 +157,7 @@ export default function Config() {
             setAircraft(preset);
             setSaved(false);
             setIsNewMode(false);
+            setHasAttemptedSave(false);
         }
     };
 
@@ -139,6 +166,7 @@ export default function Config() {
         localStorage.setItem(AIRCRAFT_CONFIG_KEY, JSON.stringify(ac));
         setSaved(false);
         setIsNewMode(false);
+        setHasAttemptedSave(false);
     };
 
     const handleDeleteCustom = (id: string, e: React.MouseEvent) => {
@@ -161,6 +189,7 @@ export default function Config() {
         setAircraft(BLANK_AIRCRAFT);
         setSaved(false);
         setIsNewMode(true);
+        setHasAttemptedSave(false);
     };
 
     const handleCancelNew = () => {
@@ -168,28 +197,11 @@ export default function Config() {
         setAircraft(stored ? JSON.parse(stored) : DEFAULT_AIRCRAFT);
         setSaved(false);
         setIsNewMode(false);
+        setHasAttemptedSave(false);
     };
 
     // In new-aircraft mode show blank instead of 0
     const numVal = (val: number): number | string => isNewMode && val === 0 ? '' : val;
-
-    // Validation — only enforced in new-aircraft mode
-    const newModeErrors: string[] = isNewMode ? [
-        ...(!aircraft.tailNumber.trim() ? [t('config.tailNumber')] : []),
-        ...(aircraft.maxTakeoffWeight <= 0 ? [t('config.maxTakeoffWeight')] : []),
-        ...(aircraft.basicEmptyWeight <= 0 ? [t('config.basicEmptyWeight')] : []),
-        ...(aircraft.emptyWeightArm <= 0 ? [t('config.emptyWeightArm')] : []),
-        ...(aircraft.fuelCapacity <= 0 ? [t('config.usableFuel')] : []),
-        ...(aircraft.usableFuelPerGal <= 0 ? [t('config.fuelWeight')] : []),
-        ...(aircraft.stationArms.pilot_front_pax <= 0 ? [t('config.frontSeats')] : []),
-        ...(aircraft.stationArms.rear_pax <= 0 ? [t('config.rearSeats')] : []),
-        ...(aircraft.stationArms.baggage_1 <= 0 ? [t('config.baggage1')] : []),
-        ...(aircraft.stationArms.baggage_2 <= 0 ? [t('config.baggage2')] : []),
-        ...(aircraft.stationArms.fuel <= 0 ? [t('config.fuel')] : []),
-        ...(aircraft.maxBaggage1Weight <= 0 ? [t('config.baggage1Max')] : []),
-        ...(aircraft.maxTotalBaggageWeight <= 0 ? [t('config.totalBaggageMax')] : []),
-    ] : [];
-    const hasNewModeErrors = newModeErrors.length > 0;
 
     return (
         <div className="max-w-4xl mx-auto space-y-6 transition-colors duration-300">
@@ -208,16 +220,29 @@ export default function Config() {
                             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">{t('config.quickLoad')}</h3>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            {getAllPresets().map((preset) => (
-                                <button
-                                    key={preset.id}
-                                    onClick={() => handleLoadPreset(preset.id)}
-                                    className="px-4 py-3 bg-white dark:bg-gray-900/50 border border-blue-300 dark:border-gray-700 rounded-md hover:bg-blue-50 dark:hover:bg-gray-800 hover:border-aviation-blue dark:hover:border-blue-500 transition-all text-left group"
-                                >
-                                    <div className="font-semibold text-aviation-blue dark:text-blue-400 group-hover:scale-105 transition-transform origin-left">{preset.tailNumber}</div>
-                                    <div className="text-xs text-gray-600 dark:text-gray-400">{preset.name}</div>
-                                </button>
-                            ))}
+                            {getAllPresets().map((preset) => {
+                                const isSelected = aircraft.id === preset.id && !isNewMode;
+                                return (
+                                    <button
+                                        key={preset.id}
+                                        onClick={() => handleLoadPreset(preset.id)}
+                                        className={`relative px-4 py-3 rounded-md transition-all text-left group ${isSelected
+                                            ? 'bg-blue-50 dark:bg-blue-900/40 border-2 border-aviation-blue dark:border-blue-400 shadow-sm'
+                                            : 'bg-white dark:bg-gray-900/50 border border-blue-300 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800 hover:border-aviation-blue dark:hover:border-blue-500'
+                                            }`}
+                                    >
+                                        {isSelected && (
+                                            <div className="absolute top-3 right-3 text-aviation-blue dark:text-blue-400">
+                                                <CheckCircle2 className="h-5 w-5" />
+                                            </div>
+                                        )}
+                                        <div className="font-semibold text-aviation-blue dark:text-blue-400 group-hover:scale-105 transition-transform origin-left pr-8">
+                                            {preset.tailNumber}
+                                        </div>
+                                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{preset.name}</div>
+                                    </button>
+                                );
+                            })}
                         </div>
                         <p className="text-xs text-blue-700 dark:text-blue-300 mt-3 font-medium">
                             {t('config.presetInstruction')}
@@ -230,25 +255,38 @@ export default function Config() {
                                     {t('config.myAircraft')}
                                 </p>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                    {customList.map((ac) => (
-                                        <div
-                                            key={ac.id}
-                                            onClick={() => handleLoadCustom(ac)}
-                                            className="relative px-4 py-3 bg-white dark:bg-gray-900/50 border border-green-400 dark:border-green-700 rounded-md hover:bg-green-50 dark:hover:bg-gray-800 hover:border-green-600 dark:hover:border-green-500 transition-all text-left group cursor-pointer"
-                                        >
-                                            <div className="font-semibold text-green-700 dark:text-green-400 group-hover:scale-105 transition-transform origin-left">{ac.tailNumber || '—'}</div>
-                                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                                                BEW: {ac.basicEmptyWeight.toFixed(0)} | MTW: {ac.maxTakeoffWeight.toFixed(0)}
-                                            </div>
-                                            <button
-                                                onClick={(e) => handleDeleteCustom(ac.id, e)}
-                                                title="Delete"
-                                                className="absolute top-2 right-2 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                    {customList.map((ac) => {
+                                        const isSelected = aircraft.id === ac.id && !isNewMode;
+                                        return (
+                                            <div
+                                                key={ac.id}
+                                                onClick={() => handleLoadCustom(ac)}
+                                                className={`relative px-4 py-3 rounded-md transition-all text-left group cursor-pointer ${isSelected
+                                                    ? 'bg-green-50 dark:bg-green-900/40 border-2 border-green-600 dark:border-green-500 shadow-sm'
+                                                    : 'bg-white dark:bg-gray-900/50 border border-green-400 dark:border-green-700 hover:bg-green-50 dark:hover:bg-gray-800 hover:border-green-600 dark:hover:border-green-500'
+                                                    }`}
                                             >
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                            </button>
-                                        </div>
-                                    ))}
+                                                {isSelected && (
+                                                    <div className="absolute top-3 right-8 text-green-600 dark:text-green-400">
+                                                        <CheckCircle2 className="h-4 w-4" />
+                                                    </div>
+                                                )}
+                                                <div className="font-semibold text-green-700 dark:text-green-400 group-hover:scale-105 transition-transform origin-left pr-12">
+                                                    {ac.tailNumber || '—'}
+                                                </div>
+                                                <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                                    BEW: {ac.basicEmptyWeight.toFixed(0)} | MTW: {ac.maxTakeoffWeight.toFixed(0)}
+                                                </div>
+                                                <button
+                                                    onClick={(e) => handleDeleteCustom(ac.id, e)}
+                                                    title="Delete"
+                                                    className="absolute top-2 right-2 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors z-10 p-1"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
@@ -478,11 +516,7 @@ export default function Config() {
                 <div className="flex flex-wrap items-center gap-3 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
                     <button
                         onClick={handleSave}
-                        disabled={hasNewModeErrors}
-                        className={`flex items-center gap-2 px-6 py-2 text-white rounded-md font-medium transition shadow-sm active:scale-95 ${hasNewModeErrors
-                                ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed opacity-60'
-                                : 'bg-aviation-blue hover:bg-blue-700'
-                            }`}
+                        className="flex items-center gap-2 px-6 py-2 text-white rounded-md font-medium transition shadow-sm active:scale-95 bg-aviation-blue hover:bg-blue-700"
                     >
                         <Save className="h-4 w-4" />
                         {t('config.save')}
@@ -499,7 +533,7 @@ export default function Config() {
                             ✓ {t('config.savedSuccess')}
                         </div>
                     )}
-                    {hasNewModeErrors && (
+                    {hasAttemptedSave && hasNewModeErrors && (
                         <div className="w-full mt-2 text-sm text-red-600 dark:text-red-400">
                             <p className="font-semibold mb-1">⚠ {t('config.validationError')}</p>
                             <ul className="list-disc list-inside space-y-0.5">
