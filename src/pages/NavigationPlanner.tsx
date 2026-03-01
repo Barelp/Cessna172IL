@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Map, Plus, Trash2, Calculator, PlusCircle, Send, AlertTriangle, RefreshCw, Search } from 'lucide-react';
+import { Map, Plus, Trash2, Calculator, PlusCircle, Send, AlertTriangle, RefreshCw, Search, Code, FileText } from 'lucide-react';
+import { decode } from '@rovacc/notam-decoder';
 import type { FlightDetails, FlightLeg, Notam } from '../types/navigation';
 import { waypoints } from '../data/waypoints';
 import { getAllPresets } from '../data/presets';
@@ -73,6 +74,7 @@ export default function NavigationPlanner() {
     const [fetchedNotams, setFetchedNotams] = useState<Notam[]>([]);
     const [notamsFileDate, setNotamsFileDate] = useState<string | null>(null);
     const [isLoadingNotams, setIsLoadingNotams] = useState(false);
+    const [notamViewMode, setNotamViewMode] = useState<'raw' | 'decoded'>('decoded');
 
     const fetchNotams = async () => {
         setIsLoadingNotams(true);
@@ -874,36 +876,41 @@ export default function NavigationPlanner() {
                                         {t('navPlanner.notams.title', 'NOTAMs List')} <span className="text-sm font-normal opacity-75 hidden xs:inline">(notammap.org)</span>
                                     </h3>
                                 </div>
+                            </div>
+
+                            {/* Actions Box */}
+                            <div className="flex flex-row items-center gap-2 sm:gap-3 w-full sm:w-auto text-white mt-1 sm:mt-0">
                                 <button
                                     onClick={fetchNotams}
                                     disabled={isLoadingNotams}
-                                    className={`sm:hidden shrink-0 flex items-center gap-1.5 p-1.5 bg-white/10 text-white hover:text-blue-200 border border-white/20 rounded-lg hover:bg-white/20 transition ${isLoadingNotams ? "opacity-50" : ""}`}
+                                    className={`shrink-0 flex items-center justify-center p-2 bg-white/10 text-white hover:text-blue-200 border border-white/20 rounded-lg hover:bg-white/20 transition ${isLoadingNotams ? "opacity-50" : ""}`}
                                     title={t('navPlanner.notams.refresh', 'Refresh NOTAMs')}
                                 >
                                     <RefreshCw className={`h-4 w-4 ${isLoadingNotams ? 'animate-spin' : ''}`} strokeWidth={2} />
                                     {notamsFileDate && (
-                                        <span className="text-xs font-medium pr-1 whitespace-nowrap">
+                                        <span className="text-xs font-semibold ml-1.5 whitespace-nowrap">
                                             {new Date(notamsFileDate).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     )}
                                 </button>
-                            </div>
 
-                            {/* Desktop update time & refresh */}
-                            <div className="hidden sm:flex items-center gap-4 text-white justify-end">
-                                {notamsFileDate && (
-                                    <span className="text-sm opacity-90 font-mono">
-                                        {t('navPlanner.notams.lastUpdate', 'Last Updated:')} {new Date(notamsFileDate).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' })}
-                                    </span>
-                                )}
-                                <button
-                                    onClick={fetchNotams}
-                                    disabled={isLoadingNotams}
-                                    className={`p-1.5 text-white hover:text-blue-200 rounded-lg hover:bg-white/10 transition ${isLoadingNotams ? "opacity-50" : ""}`}
-                                    title={t('navPlanner.notams.refresh', 'Refresh NOTAMs')}
-                                >
-                                    <RefreshCw className={`h-[18px] w-[18px] ${isLoadingNotams ? 'animate-spin' : ''}`} strokeWidth={2} />
-                                </button>
+                                {/* Raw / Decoded Toggles */}
+                                <div className="bg-white/10 p-1 rounded-lg flex items-center flex-1 sm:flex-none">
+                                    <button
+                                        onClick={() => setNotamViewMode('raw')}
+                                        className={`flex-1 sm:flex-none justify-center px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors flex items-center gap-1.5 ${notamViewMode === 'raw' ? 'bg-white text-aviation-blue shadow-sm' : 'text-white hover:bg-white/20'}`}
+                                    >
+                                        <Code className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                        {t('navPlanner.notams.raw', 'Raw')}
+                                    </button>
+                                    <button
+                                        onClick={() => setNotamViewMode('decoded')}
+                                        className={`flex-1 sm:flex-none justify-center px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors flex items-center gap-1.5 ${notamViewMode === 'decoded' ? 'bg-white text-aviation-blue shadow-sm' : 'text-white hover:bg-white/20'}`}
+                                    >
+                                        <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                        {t('navPlanner.notams.decoded', 'Decoded')}
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -937,8 +944,8 @@ export default function NavigationPlanner() {
                                                 <div className="flex justify-between items-start mb-2">
                                                     <span className="font-bold text-red-600 text-lg">NOTAM: {notam.series}{notam.number}/{notam.year}</span>
                                                     {(() => {
-                                                        const raw = notam.raw || notam.notamText || '';
-                                                        const match = raw.match(/CREATED:\s*(\d{2}\s+\w{3}\s+\d{4}\s+\d{2}:\d{2})/i);
+                                                        const rawText = notam.raw || notam.notamText || '';
+                                                        const match = rawText.match(/CREATED:\s*(\d{2}\s+\w{3}\s+\d{4}\s+\d{2}:\d{2})/i);
                                                         return match ? (
                                                             <span className="text-xs text-gray-500 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded whitespace-nowrap">
                                                                 {match[1]}
@@ -946,9 +953,62 @@ export default function NavigationPlanner() {
                                                         ) : null;
                                                     })()}
                                                 </div>
-                                                <pre className="text-sm whitespace-pre-wrap font-mono m-0 text-gray-800 dark:text-gray-300">
-                                                    {notam.raw || notam.notamText}
-                                                </pre>
+
+                                                {notamViewMode === 'raw' ? (
+                                                    <pre className="text-sm whitespace-pre-wrap font-mono m-0 text-gray-800 dark:text-gray-300">
+                                                        {notam.raw || notam.notamText}
+                                                    </pre>
+                                                ) : (
+                                                    <div className="space-y-3">
+                                                        {(() => {
+                                                            const rawText = notam.raw || notam.notamText || '';
+                                                            try {
+                                                                const decoded = decode(rawText);
+                                                                return (
+                                                                    <div className="text-sm text-gray-800 dark:text-gray-200">
+                                                                        {/* Decoded Title & Location */}
+                                                                        {(decoded.title || decoded.fir) && (
+                                                                            <div className="mb-2 font-semibold text-aviation-blue dark:text-blue-400">
+                                                                                {decoded.fir && <span className="mr-2">[{decoded.fir}]</span>}
+                                                                                {decoded.title}
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* Human Readable Text */}
+                                                                        <div className="bg-white/50 dark:bg-black/20 p-3 rounded border border-gray-100 dark:border-gray-800 mb-2 whitespace-pre-wrap leading-relaxed">
+                                                                            {decoded.text}
+                                                                        </div>
+
+                                                                        {/* Details (Dates, Rules) */}
+                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400 mt-2">
+                                                                            {decoded.duration && (
+                                                                                <div>
+                                                                                    <strong>Valid: </strong><br />
+                                                                                    {new Date(decoded.duration.dateBegin).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}
+                                                                                    {' - '}
+                                                                                    {decoded.duration.permanent ? 'Permanent' : (decoded.duration.dateEnd ? new Date(decoded.duration.dateEnd).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' }) : 'Unknown')}
+                                                                                </div>
+                                                                            )}
+                                                                            {decoded.rules && decoded.rules.length > 0 && (
+                                                                                <div>
+                                                                                    <strong>Rules: </strong>
+                                                                                    {decoded.rules.join(', ')}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            } catch (e) {
+                                                                // On decode fail, fallback to raw gracefully
+                                                                return (
+                                                                    <pre className="text-sm whitespace-pre-wrap font-mono m-0 text-gray-800 dark:text-gray-300">
+                                                                        {rawText}
+                                                                    </pre>
+                                                                );
+                                                            }
+                                                        })()}
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}
@@ -961,7 +1021,8 @@ export default function NavigationPlanner() {
                         </div>
                     </div>
                 </div>
-            )}
+            )
+            }
             {/* Datalist for Airports */}
             <datalist id="airports-list">
                 {airportOptions
@@ -980,6 +1041,6 @@ export default function NavigationPlanner() {
                         <option key={wp.code} value={`${wp.code} - ${wp.name}`} />
                     ))}
             </datalist>
-        </div>
+        </div >
     );
 }
