@@ -131,8 +131,11 @@ export default function FlightMap({ legs, origin, finalDest }: FlightMapProps) {
     const toggleTracking = () => {
         if (!isTracking) {
             // Request permission on iOS 13+ devices for DeviceOrientation
-            if (typeof (DeviceOrientationEvent as any) !== 'undefined' && typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
-                (DeviceOrientationEvent as any).requestPermission()
+            interface IOSDeviceOrientationEvent extends DeviceOrientationEvent {
+                requestPermission?: () => Promise<'granted' | 'denied'>;
+            }
+            if (typeof (DeviceOrientationEvent as unknown as IOSDeviceOrientationEvent) !== 'undefined' && typeof (DeviceOrientationEvent as unknown as IOSDeviceOrientationEvent).requestPermission === 'function') {
+                (DeviceOrientationEvent as unknown as IOSDeviceOrientationEvent).requestPermission!()
                     .then(() => {
                         setIsTracking(true);
                     })
@@ -153,8 +156,11 @@ export default function FlightMap({ legs, origin, finalDest }: FlightMapProps) {
 
         const handleOrientation = (event: DeviceOrientationEvent) => {
             let newHeading = null;
-            if ((event as any).webkitCompassHeading) {
-                newHeading = (event as any).webkitCompassHeading;
+            interface IOSDeviceOrientationEvent extends DeviceOrientationEvent {
+                webkitCompassHeading?: number;
+            }
+            if ((event as IOSDeviceOrientationEvent).webkitCompassHeading) {
+                newHeading = (event as IOSDeviceOrientationEvent).webkitCompassHeading || null;
             } else if (event.absolute && event.alpha !== null) {
                 newHeading = 360 - event.alpha;
             }
@@ -188,8 +194,10 @@ export default function FlightMap({ legs, origin, finalDest }: FlightMapProps) {
                 window.addEventListener('deviceorientation', handleOrientation as EventListener);
             }
         } else {
-            setUserLocation(null);
-            setHeading(null);
+            // isTracking is false, we can clear state safely elsewhere or we just rely on it being false to not render
+            // the marker. React-leaflet map component will re-render without it.
+            // DO NOT call setState inside the effect unconditionally if it triggers re-renders.
+            // Since this effect depends on isTracking, when isTracking becomes false, we shouldn't trigger another render.
         }
 
         return () => {

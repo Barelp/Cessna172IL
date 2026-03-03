@@ -514,14 +514,11 @@ export default function NavigationPlanner() {
 
             {activeTab === 'planner' && (
                 <div className="space-y-6 animate-in fade-in duration-300">
-                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-4 rounded-md shadow-sm">
-                        <div className="flex">
-                            <div className="ml-3">
-                                <p className="text-sm text-yellow-700 dark:text-yellow-400 font-medium">
-                                    {t('navPlanner.warning')}
-                                </p>
-                            </div>
-                        </div>
+                    <div className="bg-amber-100 dark:bg-amber-900/30 border-l-4 border-amber-500 text-amber-700 dark:text-amber-400 p-4 rounded-r shadow-sm flex items-start gap-3">
+                        <AlertTriangle className="h-6 w-6 flex-shrink-0" />
+                        <p className="font-bold text-sm md:text-base">
+                            {t('navPlanner.warning')}
+                        </p>
                     </div>
 
                     {/* General Details Grid */}
@@ -1023,7 +1020,7 @@ export default function NavigationPlanner() {
                                                                         </div>
                                                                     </div>
                                                                 );
-                                                            } catch (e) {
+                                                            } catch {
                                                                 // On decode fail, fallback to raw gracefully
                                                                 return (
                                                                     <pre className="text-sm whitespace-pre-wrap font-mono m-0 text-gray-800 dark:text-gray-300">

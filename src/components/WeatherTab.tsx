@@ -7,11 +7,11 @@ import { parseWarning, formatCoordinateStr } from '../utils/warningParser';
 
 interface WeatherData {
     data?: {
-        metars?: Record<string, any[]>;
-        tafors?: Record<string, any[]>;
-        atis?: Record<string, any[]>;
-        area_warnings?: Record<string, any>;
-        warnings?: Record<string, any>;
+        metars?: Record<string, { content: string }[]>;
+        tafors?: Record<string, { lines: { content: string }[] }[]>;
+        atis?: Record<string, { content: string }[]>;
+        area_warnings?: Record<string, { lines: { content: string }[] }>;
+        warnings?: Record<string, Record<string, { lines: { content: string }[] }>>;
     };
 }
 
@@ -68,7 +68,7 @@ export default function WeatherTab() {
         Object.values(weatherData.data.tafors).forEach(arr => {
             arr.forEach(item => {
                 if (item.lines) {
-                    tafors.push(item.lines.map((l: any) => l.content));
+                    tafors.push(item.lines.map((l) => l.content));
                 }
             });
         });
@@ -87,16 +87,16 @@ export default function WeatherTab() {
     if (weatherData?.data?.area_warnings) {
         Object.values(weatherData.data.area_warnings).forEach(item => {
             if (item.lines) {
-                warnings.push(item.lines.map((l: any) => l.content));
+                warnings.push(item.lines.map((l) => l.content));
             }
         });
     }
     // Add Aerodrome Warnings as well
     if (weatherData?.data?.warnings) {
         Object.values(weatherData.data.warnings).forEach(aidGroup => {
-            Object.values(aidGroup).forEach((item: any) => {
+            Object.values(aidGroup).forEach((item) => {
                 if (item.lines) {
-                    warnings.push(item.lines.map((l: any) => l.content));
+                    warnings.push(item.lines.map((l) => l.content));
                 }
             });
         });
@@ -137,7 +137,7 @@ export default function WeatherTab() {
                     <div className="mt-2 pt-2 text-xs text-gray-400 font-mono border-t border-gray-100 dark:border-gray-800">{raw}</div>
                 </div>
             );
-        } catch (e) {
+        } catch {
             return <div className="font-mono text-sm">{raw}</div>;
         }
     };
@@ -198,7 +198,7 @@ export default function WeatherTab() {
                     )}
                 </div>
             );
-        } catch (e) {
+        } catch {
             return (
                 <div className="font-mono text-sm flex flex-col gap-1">
                     {lines.map((line, j) => (
@@ -284,7 +284,7 @@ export default function WeatherTab() {
                     <div className="mt-2 pt-2 text-xs text-gray-400 font-mono border-t border-gray-100 dark:border-gray-800 break-words">{raw}</div>
                 </div>
             );
-        } catch (e) {
+        } catch {
             return <div className="font-mono text-sm">{raw}</div>;
         }
     };
@@ -351,7 +351,7 @@ export default function WeatherTab() {
                     </div>
                 </div>
             );
-        } catch (e) {
+        } catch {
             return (
                 <div className="font-mono text-sm flex flex-col gap-1">
                     {lines.map((line, j) => (

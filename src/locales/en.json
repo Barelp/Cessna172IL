@@ -53,6 +53,7 @@
         "fuel": "Fuel"
     },
     "wb": {
+        "title": "Weight & Balance Calc",
         "flightStatus": "Flight Status",
         "disclaimer": "This calculator is not a substitute for the POH. Always verify your calculations!",
         "readyForTakeoff": "READY FOR TAKEOFF",

@@ -52,8 +52,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Detailed error extraction from the SendGrid SDK structure if present
         let errorBody = (error as Error).message;
-        if ((error as any).response && (error as any).response.body) {
-            errorBody = JSON.stringify((error as any).response.body);
+        if (typeof error === 'object' && error !== null && 'response' in error) {
+            const sgError = error as { response?: { body?: unknown } };
+            if (sgError.response && sgError.response.body) {
+                errorBody = JSON.stringify(sgError.response.body);
+            }
         }
 
         return res.status(500).json({ message: 'Failed to send email via SendGrid', error: errorBody });

@@ -2,7 +2,7 @@ import { useWeightAndBalance, KG_TO_LBS, GAL_TO_LITER } from '../hooks/useWeight
 import CGChart from './CGChart';
 import StationDiagram from './StationDiagramNew';
 import Tooltip from './Tooltip';
-import { Package, ChevronDown, ChevronUp, HelpCircle, PlaneTakeoff, PlaneLanding, Trash2, Settings, Users, AlertTriangle } from 'lucide-react';
+import { Package, ChevronDown, ChevronUp, HelpCircle, PlaneTakeoff, PlaneLanding, Trash2, Settings, Users, AlertTriangle, Gauge } from 'lucide-react';
 import { getAllPresets, getPresetAircraft, getCustomAircraftList } from '../data/presets';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -116,7 +116,15 @@ export default function WBCalculator() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-colors duration-300">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 transition-colors duration-300">
+
+      {/* Header Banner */}
+      <div className="flex items-center gap-3 border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
+        <Gauge className="h-8 w-8 text-aviation-blue dark:text-blue-400" />
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('wb.title')}</h2>
+        </div>
+      </div>
 
       {/* Disclaimer Banner */}
       <div className="bg-amber-100 dark:bg-amber-900/30 border-l-4 border-amber-500 text-amber-700 dark:text-amber-400 p-4 mb-6 rounded-r shadow-sm flex items-start gap-3">
