@@ -456,7 +456,7 @@ export default function WBCalculator() {
       </div>
 
       {/* Calculation Details Toggle - Outside the grid for full width */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden border border-transparent dark:border-gray-700 transition-colors">
+      <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden border border-transparent dark:border-gray-700 transition-colors">
         <button
           onClick={() => setShowDetails(!showDetails)}
           className="w-full px-6 py-4 flex items-center justify-between text-start focus:outline-none hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"

@@ -10,7 +10,7 @@ import { ThemeContext } from './context/ThemeContext';
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('app-theme');
-    return (saved as 'light' | 'dark') || 'light';
+    return (saved as 'light' | 'dark') || 'dark';
   });
 
   useEffect(() => {
